@@ -35,7 +35,8 @@ function VerifyForm() {
       return;
     }
 
-    router.push("/profil");
+    // Vers l'onboarding : il redirigera vers /profil si le profil est déjà complet.
+    router.push("/inscription");
     router.refresh();
   }
 
