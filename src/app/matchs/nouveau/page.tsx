@@ -5,7 +5,7 @@ export default function NouveauMatchPage() {
     <div>
       <PageHeader
         title="Saisir un match"
-        subtitle="Jeu (FifaChamp / CoinCoin), format 1v1·2v2, adversaires, nombre de manches."
+        subtitle="Jeu (FifaChamp / CoinCoin), format 1v1·2v2, adversaires, vainqueur (+ score pour FifaChamp)."
       />
       <ComingSoon>
         Le formulaire de saisie (réservé aux élèves connectés) est développé en

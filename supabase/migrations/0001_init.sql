@@ -79,17 +79,21 @@ create table public.games (
   id         uuid primary key default gen_random_uuid(),
   name       text not null unique,
   slug       text not null unique,
+  has_score  boolean not null default false,  -- true = score chiffré par camp (FifaChamp) ; false = vainqueur/perdant seul (CoinCoin)
+  rules      text,                             -- règles du jeu (markdown), rédigées plus tard
   is_active  boolean not null default true,
   created_at timestamptz not null default now()
 );
 
-insert into public.games (name, slug) values
-  ('FifaChamp', 'fifachamp'),
-  ('CoinCoin',  'coincoin');
+insert into public.games (name, slug, has_score) values
+  ('FifaChamp', 'fifachamp', true),
+  ('CoinCoin',  'coincoin',  false);
 
 -- =====================================================================
 -- matches
--- Format par match (1v1 / 2v2 / 1v2). Score = manches gagnées par camp.
+-- Un match = une seule manche. Format par match (1v1 / 2v2 / 1v2).
+-- Résultat minimal : vainqueur obligatoire ; score chiffré optionnel (selon le jeu).
+-- `stats` (jsonb) permet d'ajouter plus d'infos plus tard sans migration.
 -- =====================================================================
 create table public.matches (
   id           uuid primary key default gen_random_uuid(),
@@ -100,9 +104,10 @@ create table public.matches (
   location     text,
   status       text not null default 'SOUMIS'
                  check (status in ('SOUMIS', 'VALIDE', 'MODIFIE', 'REVALIDE', 'CONTESTE')),
-  manches_a    int,                 -- manches gagnées côté A
-  manches_b    int,                 -- manches gagnées côté B
-  winner_side  text check (winner_side in ('A', 'B', 'NUL')),
+  winner_side  text not null check (winner_side in ('A', 'B', 'NUL')),
+  score_a      int,                 -- score chiffré (jeux à score, ex. FifaChamp) ; null sinon
+  score_b      int,
+  stats        jsonb,               -- stats additionnelles optionnelles (extensible)
   side_a_label text,
   side_b_label text,
   created_at   timestamptz not null default now(),

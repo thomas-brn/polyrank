@@ -68,16 +68,20 @@ SOUMIS → VALIDÉ
 
 Au lancement, **2 jeux** seulement :
 
-| Jeu | Description |
-|---|---|
-| **FifaChamp** | Tournoi sur le jeu vidéo FIFA |
-| **CoinCoin** | Jeu à boire |
+| Jeu | Score chiffré ? | Résultat enregistré |
+|---|---|---|
+| **FifaChamp** | ✅ (buts) | score par camp + vainqueur |
+| **CoinCoin** | ❌ | vainqueur / perdant seulement |
 
-**Format** (par match, pas par jeu) : chaque jeu se joue en **1v1** ou **2v2** ; le **1v2** est possible mais rare.
+**Format** (par match) : **1v1** ou **2v2** ; le **1v2** est possible mais rare.
 
-**Score** : un match se joue en plusieurs **manches**. Le joueur indique le **nombre de manches** ; on enregistre les manches gagnées par chaque camp (`manches_a` / `manches_b`), d'où `winner_side` (`A` / `B`). *(Modèle provisoire — à affiner avec les prochains points du parcours.)*
+**Une seule manche par match** (pas de manches multiples).
 
-> Système de points de classement (Elo, points V/D…) : tranché en **Phase 4**, basé sur `winner_side`.
+**Résultat minimal** : pour l'instant on ne note que **les gagnants et les perdants** (+ le score pour les jeux à score). Le **calcul du classement** (points/Elo) viendra plus tard.
+
+**Extensibilité** : le modèle prévoit d'ajouter plus d'infos/stats par match **sans migration** (colonne `stats` JSONB). UX visée : saisie **rapide** d'un résultat, avec une **option « ajouter plus de stats »** pour qui le souhaite.
+
+**Règles** : un bouton « Règles » renvoie vers la page de règles de chaque jeu (contenu rédigé plus tard — champ `rules` sur `games`).
 
 ---
 
@@ -112,6 +116,7 @@ Au lancement, **2 jeux** seulement :
 | `/matchs` | Historique des matchs, filtrable | Public |
 | `/matchs/nouveau` | Formulaire de saisie d'un match | Élève connecté |
 | `/matchs/[id]` | Détail d'un match : valider / contester / modifier | Public (actions selon rôle) |
+| `/regles/[jeu]` | Règles d'un jeu (bouton « Règles ») | Public |
 | `/joueurs/[id]` | Profil public d'un joueur + stats | Public |
 | `/profil` | Mon profil (édition) | Connecté |
 | `/admin` | Back-office : comptes, matchs litigieux | Admin |
