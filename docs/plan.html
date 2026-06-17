@@ -1,0 +1,311 @@
+style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-sans); color: var(--color-text-primary); }
+  .container { padding: 1.5rem 0; }
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 0.25rem; color: var(--color-text-primary); }
+  .subtitle { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+  .phase { margin-bottom: 1.25rem; border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .phase-header { display: flex; align-items: center; gap: 10px; padding: 0.75rem 1rem; cursor: pointer; user-select: none; background: var(--color-background-secondary); }
+  .phase-header:hover { background: var(--color-background-tertiary); }
+  .phase-badge { font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+  .badge-purple { background: #EEEDFE; color: #3C3489; }
+  .badge-teal   { background: #E1F5EE; color: #0F6E56; }
+  .badge-amber  { background: #FAEEDA; color: #854F0B; }
+  .badge-coral  { background: #FAECE7; color: #993C1D; }
+  .badge-blue   { background: #E6F1FB; color: #185FA5; }
+  @media (prefers-color-scheme: dark) {
+    .badge-purple { background: #3C3489; color: #CECBF6; }
+    .badge-teal   { background: #085041; color: #9FE1CB; }
+    .badge-amber  { background: #633806; color: #FAC775; }
+    .badge-coral  { background: #712B13; color: #F5C4B3; }
+    .badge-blue   { background: #0C447C; color: #B5D4F4; }
+  }
+  .phase-title { font-size: 14px; font-weight: 500; flex: 1; }
+  .phase-meta { font-size: 12px; color: var(--color-text-secondary); }
+  .chevron { font-size: 12px; color: var(--color-text-secondary); transition: transform 0.2s; }
+  .phase-body { padding: 1rem; border-top: 1px solid var(--color-border-tertiary); display: none; }
+  .phase-body.open { display: block; }
+  .task-grid { display: grid; gap: 8px; }
+  .task { display: flex; gap: 10px; padding: 10px 12px; background: var(--color-background-primary); border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); align-items: flex-start; }
+  .task-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+  .task-label { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .task-desc { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; line-height: 1.5; }
+  .tag { display: inline-block; font-size: 11px; padding: 1px 6px; border-radius: 4px; border: 1px solid var(--color-border-tertiary); color: var(--color-text-secondary); margin-top: 4px; margin-right: 3px; }
+  .progress-bar { height: 3px; background: var(--color-border-tertiary); border-radius: 2px; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 2px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1.25rem; }
+  .summary-card { padding: 10px 12px; background: var(--color-background-secondary); border: 1px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); text-align: center; }
+  .summary-num { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .summary-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .chevron.open { transform: rotate(90deg); }
+</style>
+ 
+<div class="container">
+  <h1>Plan projet — Polytech Sports Tracker</h1>
+  <p class="subtitle">Site de saisie des résultats de matchs et leaderboards pour élèves ingénieurs</p>
+ 
+  <div class="summary-grid">
+    <div class="summary-card"><div class="summary-num">5</div><div class="summary-lbl">Phases</div></div>
+    <div class="summary-card"><div class="summary-num">21</div><div class="summary-lbl">Tâches</div></div>
+    <div class="summary-card"><div class="summary-num">~8 sem.</div><div class="summary-lbl">Durée estimée</div></div>
+  </div>
+ 
+  <!-- Phase 1 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-badge badge-purple">Phase 1</span>
+      <span class="phase-title">Cadrage & architecture</span>
+      <span class="phase-meta">~1 semaine</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="phase-body">
+      <div class="task-grid">
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-users" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Définir les rôles utilisateurs</div>
+            <div class="task-desc">Élève joueur, capitaine d'équipe, admin (prof ou bureau des sports). Quelles permissions pour chaque rôle.</div>
+            <span class="tag">UX</span><span class="tag">Fonctionnel</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-list-check" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Lister les sports et formats de matchs</div>
+            <div class="task-desc">Football, basket, ping-pong… chaque sport a des règles de score différentes (sets, points, mi-temps).</div>
+            <span class="tag">Fonctionnel</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-layout" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Choisir la stack technique</div>
+            <div class="task-desc">Frontend (React, Vue…), backend (Node, Django…), base de données (PostgreSQL, Firebase…), hébergement.</div>
+            <span class="tag">Technique</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-sitemap" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Définir la structure des pages du site</div>
+            <div class="task-desc">Accueil → Leaderboards → Saisie de match → Profil → Admin. Arborescence et navigation.</div>
+            <span class="tag">UX</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Phase 2 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-badge badge-teal">Phase 2</span>
+      <span class="phase-title">Authentification des élèves</span>
+      <span class="phase-meta">~1 semaine</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="phase-body">
+      <div class="task-grid">
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-school" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Choisir la méthode d'authentification</div>
+            <div class="task-desc">
+              <strong>Option A — SSO Polytech :</strong> connexion via l'ENT ou compte Microsoft/Google académique (recommandé, zéro gestion de mots de passe).<br>
+              <strong>Option B — Inscription manuelle :</strong> l'admin crée les comptes, l'élève reçoit un email d'invitation.<br>
+              <strong>Option C — Code promo :</strong> un code secret permet l'inscription (simple mais moins sécurisé).
+            </div>
+            <span class="tag">Sécurité</span><span class="tag">Backend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-id-badge" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Profil élève</div>
+            <div class="task-desc">Nom, promo/classe, sports pratiqués, photo. Lié à ses matchs joués et son classement.</div>
+            <span class="tag">BDD</span><span class="tag">Frontend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-shield-lock" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Gestion des sessions & sécurité</div>
+            <div class="task-desc">Tokens JWT ou sessions serveur. Déconnexion automatique. Protection des routes privées.</div>
+            <span class="tag">Sécurité</span><span class="tag">Backend</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Phase 3 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-badge badge-amber">Phase 3</span>
+      <span class="phase-title">Saisie & validation des matchs</span>
+      <span class="phase-meta">~2 semaines</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="phase-body">
+      <div class="task-grid">
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-pencil" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Formulaire de saisie d'un match</div>
+            <div class="task-desc">Sport, date, équipe A vs équipe B, score, lieu. Adapté selon le sport (sets pour tennis, mi-temps pour foot…).</div>
+            <span class="tag">Frontend</span><span class="tag">UX</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-check" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Système de validation du score</div>
+            <div class="task-desc">Le résultat doit être confirmé par les deux équipes (ou par un admin) avant d'être comptabilisé. Évite les faux scores.</div>
+            <span class="tag">Fonctionnel</span><span class="tag">Backend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-bell" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Notifications de confirmation</div>
+            <div class="task-desc">Email ou notification in-app envoyé à l'équipe adverse pour valider le score soumis.</div>
+            <span class="tag">Backend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-edit" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Modification & contestation d'un score</div>
+            <div class="task-desc">Que se passe-t-il si le score est incorrect ? Fenêtre de temps pour contester, rôle de l'admin en arbitre.</div>
+            <span class="tag">Fonctionnel</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-history" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Historique des matchs</div>
+            <div class="task-desc">Page listant tous les matchs passés, filtrables par sport, date, équipe ou joueur.</div>
+            <span class="tag">Frontend</span><span class="tag">BDD</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Phase 4 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-badge badge-coral">Phase 4</span>
+      <span class="phase-title">Leaderboards & statistiques</span>
+      <span class="phase-meta">~2 semaines</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="phase-body">
+      <div class="task-grid">
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-trophy" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Définir les métriques de classement</div>
+            <div class="task-desc">Points par victoire/défaite/nul, ratio victoires, système Elo… À définir par sport. Décision clé qui impacte tout le reste.</div>
+            <span class="tag">Fonctionnel</span><span class="tag">BDD</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-chart-bar" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Leaderboard général (toutes classes)</div>
+            <div class="task-desc">Classement global par sport, avec pagination, avatars et évolution (↑↓) par rapport à la semaine précédente.</div>
+            <span class="tag">Frontend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-users-group" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Classement par promo / classe</div>
+            <div class="task-desc">Filtre permettant de voir uniquement les élèves d'une même promo. Utile pour les compétitions inter-promos.</div>
+            <span class="tag">Frontend</span><span class="tag">BDD</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-user-star" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Page profil & stats personnelles</div>
+            <div class="task-desc">Historique de matchs d'un joueur, win rate, sports joués, progression du classement dans le temps.</div>
+            <span class="tag">Frontend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-refresh" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Mise à jour en temps réel (optionnel)</div>
+            <div class="task-desc">Websockets ou polling pour que les leaderboards se rafraîchissent automatiquement après un nouveau résultat.</div>
+            <span class="tag">Backend</span><span class="tag">Bonus</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- Phase 5 -->
+  <div class="phase">
+    <div class="phase-header" onclick="toggle(this)">
+      <span class="phase-badge badge-blue">Phase 5</span>
+      <span class="phase-title">Administration & déploiement</span>
+      <span class="phase-meta">~2 semaines</span>
+      <span class="chevron">▶</span>
+    </div>
+    <div class="phase-body">
+      <div class="task-grid">
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-settings" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Interface admin</div>
+            <div class="task-desc">Gérer les utilisateurs, valider/supprimer des matchs litigieux, créer des saisons ou tournois, exporter les données.</div>
+            <span class="tag">Frontend</span><span class="tag">Backend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-device-mobile" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Responsive mobile</div>
+            <div class="task-desc">Les élèves saisiront les scores depuis leur téléphone juste après un match. L'UI doit être utilisable sur mobile.</div>
+            <span class="tag">Frontend</span><span class="tag">UX</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-lock" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Sécurité & anti-triche</div>
+            <div class="task-desc">Rate limiting sur l'API, validation côté serveur de tous les scores, logs d'activité pour détecter les abus.</div>
+            <span class="tag">Sécurité</span><span class="tag">Backend</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-cloud" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Déploiement & nom de domaine</div>
+            <div class="task-desc">Héberger le site (Vercel, Railway, VPS Polytech…), configurer un domaine type sports.polytech-xxx.fr, HTTPS.</div>
+            <span class="tag">DevOps</span>
+          </div>
+        </div>
+        <div class="task">
+          <span class="task-icon"><i class="ti ti-test-pipe" aria-hidden="true"></i></span>
+          <div>
+            <div class="task-label">Tests & bêta avec un groupe pilote</div>
+            <div class="task-desc">Faire tester par une promo avant le lancement général. Recueillir les retours, corriger les bugs critiques.</div>
+            <span class="tag">QA</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<script>
+  function toggle(header) {
+    const body = header.nextElementSibling;
+    const chevron = header.querySelector('.chevron');
+    const isOpen = body.classList.toggle('open');
+    chevron.classList.toggle('open', isOpen);
+  }
+</script>
