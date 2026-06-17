@@ -1,23 +1,57 @@
 -- =====================================================================
 -- PolyRank — schéma initial (Phase 1)
--- Tables : profiles, sports, matches, match_participants, match_events
--- + triggers, seed des sports, Row-Level Security.
+-- App de classement de JEUX (à boire) entre étudiants. Réservé aux +18.
+-- Tables : schools, profiles, games, matches, match_participants, match_events
+-- + triggers, seeds, Row-Level Security.
 -- =====================================================================
 
 create extension if not exists "pgcrypto";
 
 -- =====================================================================
+-- schools : écoles du réseau Polytech (référentiel)
+-- =====================================================================
+create table public.schools (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  slug       text not null unique,
+  created_at timestamptz not null default now()
+);
+
+insert into public.schools (name, slug) values
+  ('Polytech Angers',            'angers'),
+  ('Polytech Annecy-Chambéry',   'annecy-chambery'),
+  ('Polytech Clermont',          'clermont'),
+  ('Polytech Dijon',             'dijon'),
+  ('Polytech Grenoble',          'grenoble'),
+  ('Polytech Lille',             'lille'),
+  ('Polytech Lyon',              'lyon'),
+  ('Polytech Marseille',         'marseille'),
+  ('Polytech Montpellier',       'montpellier'),
+  ('Polytech Nancy',             'nancy'),
+  ('Polytech Nantes',            'nantes'),
+  ('Polytech Nice Sophia',       'nice-sophia'),
+  ('Polytech Orléans',           'orleans'),
+  ('Polytech Paris-Saclay',      'paris-saclay'),
+  ('Polytech Sorbonne',          'sorbonne'),
+  ('Polytech Tours',             'tours');
+
+-- =====================================================================
 -- profiles : une ligne par utilisateur Supabase (auth.users)
 -- =====================================================================
 create table public.profiles (
-  id           uuid primary key references auth.users (id) on delete cascade,
-  email        text not null,
-  display_name text,
-  promo        text,
-  avatar_url   text,
-  is_admin     boolean not null default false,
-  created_at   timestamptz not null default now()
+  id          uuid primary key references auth.users (id) on delete cascade,
+  email       text not null,
+  pseudo      text,                                   -- public ; on déconseille les nom/prénom réels
+  school_id   uuid references public.schools (id),    -- null si « Exté »
+  is_external boolean not null default false,         -- true = extérieur au réseau (pas d'année)
+  annee       text check (annee in ('PEIP1', 'PEIP2', '3A', '4A', '5A', 'VIEUX_CON')),
+  is_adult    boolean not null default false,         -- confirmation +18 ans (requise par l'app)
+  avatar_url  text,
+  is_admin    boolean not null default false,
+  created_at  timestamptz not null default now()
 );
+-- Règle métier (école XOR exté, année requise si école) appliquée à l'onboarding,
+-- pas via CHECK : le profil est créé incomplet à l'inscription puis complété.
 
 -- Création automatique du profil à l'inscription d'un utilisateur.
 create or replace function public.handle_new_user()
@@ -39,43 +73,35 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- =====================================================================
--- sports
+-- games : jeux disponibles (au lancement : FifaChamp, CoinCoin)
 -- =====================================================================
-create table public.sports (
-  id                uuid primary key default gen_random_uuid(),
-  name              text not null unique,
-  slug              text not null unique,
-  scoring_type      text not null check (scoring_type in ('SCORE_SIMPLE', 'SETS')),
-  participant_mode  text not null check (participant_mode in ('INDIVIDUEL', 'EQUIPE')),
-  default_team_size int not null default 1,
-  is_active         boolean not null default true,
-  created_at        timestamptz not null default now()
+create table public.games (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null unique,
+  slug       text not null unique,
+  is_active  boolean not null default true,
+  created_at timestamptz not null default now()
 );
 
--- Liste de départ (cf. DECISIONS.md — Tâche 2).
-insert into public.sports (name, slug, scoring_type, participant_mode, default_team_size) values
-  ('Football',        'football',        'SCORE_SIMPLE', 'EQUIPE',     5),
-  ('Basketball',      'basketball',      'SCORE_SIMPLE', 'EQUIPE',     5),
-  ('Handball',        'handball',        'SCORE_SIMPLE', 'EQUIPE',     7),
-  ('Volleyball',      'volleyball',      'SETS',         'EQUIPE',     6),
-  ('Tennis de table', 'tennis-de-table', 'SETS',         'INDIVIDUEL', 1),
-  ('Badminton',       'badminton',       'SETS',         'INDIVIDUEL', 1),
-  ('Tennis',          'tennis',          'SETS',         'INDIVIDUEL', 1);
+insert into public.games (name, slug) values
+  ('FifaChamp', 'fifachamp'),
+  ('CoinCoin',  'coincoin');
 
 -- =====================================================================
 -- matches
+-- Format par match (1v1 / 2v2 / 1v2). Score = manches gagnées par camp.
 -- =====================================================================
 create table public.matches (
   id           uuid primary key default gen_random_uuid(),
-  sport_id     uuid not null references public.sports (id),
+  game_id      uuid not null references public.games (id),
   created_by   uuid not null references public.profiles (id),
+  format       text not null check (format in ('1V1', '2V2', '1V2')),
   played_at    timestamptz not null default now(),
   location     text,
   status       text not null default 'SOUMIS'
                  check (status in ('SOUMIS', 'VALIDE', 'MODIFIE', 'REVALIDE', 'CONTESTE')),
-  score_a      int,                 -- pour scoring_type = SCORE_SIMPLE
-  score_b      int,
-  sets         jsonb,               -- pour scoring_type = SETS, ex: [{"a":11,"b":7}, ...]
+  manches_a    int,                 -- manches gagnées côté A
+  manches_b    int,                 -- manches gagnées côté B
   winner_side  text check (winner_side in ('A', 'B', 'NUL')),
   side_a_label text,
   side_b_label text,
@@ -83,7 +109,7 @@ create table public.matches (
   updated_at   timestamptz not null default now()
 );
 
-create index on public.matches (sport_id);
+create index on public.matches (game_id);
 create index on public.matches (created_by);
 create index on public.matches (status);
 
@@ -139,8 +165,9 @@ create trigger matches_set_updated_at
 -- =====================================================================
 -- Row-Level Security
 -- =====================================================================
+alter table public.schools            enable row level security;
 alter table public.profiles           enable row level security;
-alter table public.sports             enable row level security;
+alter table public.games              enable row level security;
 alter table public.matches            enable row level security;
 alter table public.match_participants enable row level security;
 alter table public.match_events       enable row level security;
@@ -156,14 +183,19 @@ as $$
   select coalesce((select is_admin from public.profiles where id = auth.uid()), false);
 $$;
 
+-- schools : lecture publique, écriture admin.
+create policy "schools_select_all" on public.schools for select using (true);
+create policy "schools_admin_write" on public.schools for all
+  using (public.is_admin()) with check (public.is_admin());
+
 -- profiles : lecture publique, chacun édite son profil, admin a tous les droits.
 create policy "profiles_select_all" on public.profiles for select using (true);
 create policy "profiles_update_self" on public.profiles for update using (auth.uid() = id);
 create policy "profiles_admin_all" on public.profiles for all using (public.is_admin());
 
--- sports : lecture publique, écriture admin.
-create policy "sports_select_all" on public.sports for select using (true);
-create policy "sports_admin_write" on public.sports for all
+-- games : lecture publique, écriture admin.
+create policy "games_select_all" on public.games for select using (true);
+create policy "games_admin_write" on public.games for all
   using (public.is_admin()) with check (public.is_admin());
 
 -- matches : lecture publique ; le créateur insère/édite les siens ; admin total.

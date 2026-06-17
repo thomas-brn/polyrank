@@ -9,8 +9,8 @@ export default function HomePage() {
           Poly<span className="text-blue-100">Rank</span>
         </h1>
         <p className="mt-2 max-w-md text-blue-50">
-          Saisis tes résultats de matchs et grimpe dans les classements de ton
-          école, par sport et par promo.
+          Saisis tes résultats de matchs et grimpe dans les classements, par
+          jeu et par école.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
@@ -37,7 +37,7 @@ export default function HomePage() {
         >
           <h2 className="font-semibold">Classements</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Le top par sport, filtrable par promo.
+            Le top par jeu, filtrable par école.
           </p>
         </Link>
         <Link

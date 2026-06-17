@@ -1,4 +1,8 @@
-# Polytech Sports Tracker — Décisions projet
+# PolyRank — Décisions projet
+
+> **Domaine** — PolyRank classe des **jeux (à boire)** entre étudiants, pas des sports physiques. Au lancement : **FifaChamp** et **CoinCoin**.
+>
+> ⚠️ **Jeux d'alcool — réservés aux +18 ans.** L'inscription exige une confirmation de majorité et affiche un message de prévention : « L'abus d'alcool est dangereux pour la santé, à consommer avec modération ».
 
 ## Phase 1 — Cadrage & architecture
 
@@ -24,7 +28,16 @@ Deux rôles uniquement, pas de rôle "capitaine".
 
 - Connexion par **code OTP envoyé par email** (pas de mot de passe)
 - Inscription **ouverte** (pas de code d'invitation pour l'instant)
-- Champs à l'inscription : email, promo/classe
+
+#### Inscription — champs & garde-fous
+
+Après l'email (OTP), l'utilisateur complète son profil :
+
+- **Pseudo** (public) — affiché partout. ⚠️ On l'invite explicitement à **éviter ses nom/prénom** puisque c'est public.
+- **École** — parmi les 16 du réseau Polytech (Angers, Annecy-Chambéry, Clermont, Dijon, Grenoble, Lille, Lyon, Marseille, Montpellier, Nancy, Nantes, Nice Sophia, Orléans, Paris-Saclay, Sorbonne, Tours) **ou** « Exté » (extérieur au réseau).
+- **Année** — obligatoire **si une école est choisie** (pas pour les Exté) : `Peip1`, `Peip2`, `3A`, `4A`, `5A`, ou `Vieux con` (anciens).
+- **Majorité** — case obligatoire « J'ai plus de 18 ans ».
+- **Prévention alcool** — message de modération affiché (cf. encart en tête).
 
 #### Cycle de vie d'un match
 
@@ -51,30 +64,20 @@ SOUMIS → VALIDÉ
 
 ---
 
-### ✅ Tâche 2 : Sports & formats de matchs
+### ✅ Tâche 2 : Jeux & formats de matchs
 
-#### Modèle générique
+Au lancement, **2 jeux** seulement :
 
-Plutôt que de coder chaque sport en dur, un sport est décrit par deux axes :
+| Jeu | Description |
+|---|---|
+| **FifaChamp** | Tournoi sur le jeu vidéo FIFA |
+| **CoinCoin** | Jeu à boire |
 
-- **`participant_mode`** : `INDIVIDUEL` (1 joueur par côté, ex. ping-pong simple) ou `EQUIPE` (plusieurs joueurs). Le mode « double » (2v2) est géré comme une équipe de taille 2.
-- **`scoring_type`** :
-  - `SCORE_SIMPLE` : un score entier par côté (`score_a`, `score_b`). Vainqueur = score le plus élevé. Nul possible.
-  - `SETS` : plusieurs manches, chacune avec un score par côté (stocké en JSON). Vainqueur = plus de sets gagnés.
+**Format** (par match, pas par jeu) : chaque jeu se joue en **1v1** ou **2v2** ; le **1v2** est possible mais rare.
 
-#### Liste de départ (modifiable par un admin)
+**Score** : un match se joue en plusieurs **manches**. Le joueur indique le **nombre de manches** ; on enregistre les manches gagnées par chaque camp (`manches_a` / `manches_b`), d'où `winner_side` (`A` / `B`). *(Modèle provisoire — à affiner avec les prochains points du parcours.)*
 
-| Sport | Mode | Format de score | Vainqueur |
-|---|---|---|---|
-| Football | Équipe | Score simple (buts) | Plus de buts (nul possible) |
-| Basketball | Équipe | Score simple (points) | Plus de points |
-| Handball | Équipe | Score simple (buts) | Plus de buts |
-| Volleyball | Équipe | Sets (BO3/BO5, 25 pts) | Plus de sets |
-| Tennis de table | Individuel / Double | Sets (BO5, 11 pts) | Plus de sets |
-| Badminton | Individuel / Double | Sets (BO3, 21 pts) | Plus de sets |
-| Tennis | Individuel / Double | Sets (jeux) | Plus de sets |
-
-> Le système de points de classement (Elo, points victoire/défaite…) est tranché en **Phase 4** ; il s'appuiera sur `winner_side` (`A` / `B` / `NUL`) calculé à la validation.
+> Système de points de classement (Elo, points V/D…) : tranché en **Phase 4**, basé sur `winner_side`.
 
 ---
 
@@ -104,7 +107,8 @@ Plutôt que de coder chaque sport en dur, un sport est décrit par deux axes :
 | `/` | Accueil — aperçu du classement + accès rapide saisie | Public |
 | `/login` | Saisie de l'email → envoi du code OTP | Public |
 | `/login/verifier` | Saisie du code OTP reçu par mail | Public |
-| `/classement` | Leaderboard, filtres par sport et par promo | Public |
+| `/inscription` | Complétion du profil après 1ère connexion (pseudo, école, année, +18) | Connecté, profil incomplet |
+| `/classement` | Leaderboard, filtres par jeu et par école | Public |
 | `/matchs` | Historique des matchs, filtrable | Public |
 | `/matchs/nouveau` | Formulaire de saisie d'un match | Élève connecté |
 | `/matchs/[id]` | Détail d'un match : valider / contester / modifier | Public (actions selon rôle) |
