@@ -36,7 +36,7 @@ function names(participants: Participant[], side: "A" | "B") {
   const list = participants
     .filter((p) => p.side === side)
     .map((p) => p.profiles?.pseudo ?? p.guest_name ?? "?");
-  return list.length ? list.join(" & ") : "—";
+  return list.length ? list.join(" & ") : "?";
 }
 
 function MatchCard({ match }: { match: MatchRow }) {
@@ -69,7 +69,7 @@ function MatchCard({ match }: { match: MatchRow }) {
         </span>
         <span className="shrink-0 text-sm font-semibold text-slate-700">
           {match.games?.has_score
-            ? `${match.score_a ?? 0} – ${match.score_b ?? 0}`
+            ? `${match.score_a ?? 0} - ${match.score_b ?? 0}`
             : "vs"}
         </span>
         <span className={`flex-1 text-right text-sm ${bWins ? "font-bold" : ""}`}>

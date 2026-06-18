@@ -6,14 +6,14 @@ import { createClient } from "@/lib/supabase/server";
 
 export type NewMatchState = { error?: string };
 
-const FORMATS = ["1V1", "2V2", "1V2"] as const;
+const MAX_PER_SIDE = 4;
 
 type ParticipantInsert = {
   match_id: string;
   side: "A" | "B";
   profile_id: string | null;
   guest_name: string | null;
-  is_creator?: boolean;
+  is_creator: boolean;
 };
 
 export async function createMatch(
@@ -30,16 +30,23 @@ export async function createMatch(
   }
 
   const gameId = String(formData.get("game_id") ?? "");
-  const format = String(formData.get("format") ?? "");
   const winnerInput = String(formData.get("winner") ?? "");
   const location = String(formData.get("location") ?? "").trim() || null;
-  const mateName = String(formData.get("mate") ?? "").trim();
-  const opp1 = String(formData.get("opp1") ?? "").trim();
-  const opp2 = String(formData.get("opp2") ?? "").trim();
+
+  const mates = formData
+    .getAll("mate")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const opps = formData
+    .getAll("opp")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
 
   if (!gameId) return { error: "Choisis un jeu." };
-  if (!(FORMATS as readonly string[]).includes(format)) {
-    return { error: "Choisis un format." };
+  if (opps.length < 1) return { error: "Indique au moins un adversaire." };
+  if (opps.length > MAX_PER_SIDE) return { error: "4 adversaires maximum." };
+  if (mates.length > MAX_PER_SIDE - 1) {
+    return { error: "4 joueurs maximum dans ton équipe." };
   }
 
   const { data: game } = await supabase
@@ -50,12 +57,7 @@ export async function createMatch(
 
   if (!game) return { error: "Jeu introuvable." };
 
-  const needsTwoOpp = format === "2V2" || format === "1V2";
-  const hasMate = format === "2V2";
-
-  if (!opp1) return { error: "Indique au moins un adversaire." };
-  if (needsTwoOpp && !opp2) return { error: "Indique le second adversaire." };
-  if (hasMate && !mateName) return { error: "Indique ton coéquipier." };
+  const format = `${1 + mates.length}V${opps.length}`;
 
   let winner: "A" | "B" | "NUL";
   let scoreA: number | null = null;
@@ -81,7 +83,9 @@ export async function createMatch(
   }
 
   // Résout un nom en profil tagué (pseudo exact, insensible à la casse) ou en invité.
-  async function resolve(name: string) {
+  async function resolve(
+    name: string,
+  ): Promise<{ profile_id: string | null; guest_name: string | null }> {
     const { data } = await supabase
       .from("profiles")
       .select("id")
@@ -111,15 +115,32 @@ export async function createMatch(
     return { error: matchErr?.message ?? "Échec de la création du match." };
   }
 
+  // is_creator est posé explicitement sur CHAQUE participant : sinon PostgREST
+  // envoie NULL pour les objets où la clé manque (violation NOT NULL).
   const participants: ParticipantInsert[] = [
-    { match_id: match.id, side: "A", profile_id: user.id, guest_name: null, is_creator: true },
+    {
+      match_id: match.id,
+      side: "A",
+      profile_id: user.id,
+      guest_name: null,
+      is_creator: true,
+    },
   ];
-  if (hasMate) {
-    participants.push({ match_id: match.id, side: "A", ...(await resolve(mateName)) });
+  for (const name of mates) {
+    participants.push({
+      match_id: match.id,
+      side: "A",
+      ...(await resolve(name)),
+      is_creator: false,
+    });
   }
-  participants.push({ match_id: match.id, side: "B", ...(await resolve(opp1)) });
-  if (needsTwoOpp) {
-    participants.push({ match_id: match.id, side: "B", ...(await resolve(opp2)) });
+  for (const name of opps) {
+    participants.push({
+      match_id: match.id,
+      side: "B",
+      ...(await resolve(name)),
+      is_creator: false,
+    });
   }
 
   const { error: partErr } = await supabase

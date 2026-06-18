@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PolyRank — Classements sportifs Polytech",
+  title: "PolyRank · Classements de jeux étudiants",
   description:
-    "Saisis tes résultats de matchs et suis les classements par sport et par promo.",
+    "Saisis tes résultats de matchs et suis les classements par jeu et par école.",
 };
 
 export default function RootLayout({

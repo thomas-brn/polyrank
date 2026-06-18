@@ -1,19 +1,16 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Plus, X } from "lucide-react";
 
 import { createMatch, type NewMatchState } from "./actions";
 
 type Game = { id: string; name: string; has_score: boolean };
 
-const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+const MAX_PER_SIDE = 4;
 
-const FORMATS = [
-  { value: "1V1", label: "1 vs 1" },
-  { value: "2V2", label: "2 vs 2" },
-  { value: "1V2", label: "1 vs 2 (rare)" },
-];
+const inputClass =
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
 
 export function NewMatchForm({
   games,
@@ -23,7 +20,8 @@ export function NewMatchForm({
   myPseudo: string;
 }) {
   const [gameId, setGameId] = useState("");
-  const [format, setFormat] = useState("1V1");
+  const [mates, setMates] = useState<string[]>([]);
+  const [opps, setOpps] = useState<string[]>([""]);
   const [state, formAction, pending] = useActionState<NewMatchState, FormData>(
     createMatch,
     {},
@@ -31,8 +29,15 @@ export function NewMatchForm({
 
   const game = games.find((g) => g.id === gameId);
   const hasScore = game?.has_score ?? false;
-  const needsTwoOpp = format === "2V2" || format === "1V2";
-  const hasMate = format === "2V2";
+  const aTotal = 1 + mates.length;
+
+  const updateAt = (
+    set: typeof setMates,
+    index: number,
+    value: string,
+  ) => set((list) => list.map((v, i) => (i === index ? value : v)));
+  const removeAt = (set: typeof setMates, index: number) =>
+    set((list) => list.filter((_, i) => i !== index));
 
   return (
     <form
@@ -66,57 +71,79 @@ export function NewMatchForm({
         </div>
       </fieldset>
 
-      {/* Format */}
-      <div>
-        <label htmlFor="format" className="block text-sm font-medium">
-          Format
-        </label>
-        <select
-          id="format"
-          name="format"
-          value={format}
-          onChange={(e) => setFormat(e.target.value)}
-          className={inputClass}
-        >
-          {FORMATS.map((f) => (
-            <option key={f.value} value={f.value}>
-              {f.label}
-            </option>
+      {/* Joueurs : 2 colonnes alignées */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Ton équipe (A) */}
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold text-slate-500">Ton équipe</p>
+          <input
+            value={myPseudo}
+            disabled
+            className={`${inputClass} bg-slate-100 text-slate-600`}
+          />
+          {mates.map((value, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <input
+                name="mate"
+                value={value}
+                onChange={(e) => updateAt(setMates, i, e.target.value)}
+                placeholder="Coéquipier"
+                className={inputClass}
+              />
+              <button
+                type="button"
+                onClick={() => removeAt(setMates, i)}
+                aria-label="Retirer"
+                className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
           ))}
-        </select>
-      </div>
-
-      {/* Joueurs */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-lg bg-slate-50 p-3">
-          <p className="text-xs font-semibold text-slate-500">
-            {hasMate ? "Ton équipe (A)" : "Toi (A)"}
-          </p>
-          <p className="mt-1 text-sm font-medium">{myPseudo}</p>
-          {hasMate ? (
-            <input
-              name="mate"
-              placeholder="Coéquipier (pseudo ou nom)"
-              className={inputClass}
-            />
+          {aTotal < MAX_PER_SIDE ? (
+            <button
+              type="button"
+              onClick={() => setMates((m) => [...m, ""])}
+              className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-blue-600 hover:underline"
+            >
+              <Plus className="size-3.5" /> Ajouter
+            </button>
           ) : null}
         </div>
-        <div className="rounded-lg bg-slate-50 p-3">
-          <p className="text-xs font-semibold text-slate-500">
-            {needsTwoOpp ? "Adversaires (B)" : "Adversaire (B)"}
-          </p>
-          <input
-            name="opp1"
-            required
-            placeholder="Pseudo (si inscrit) ou nom"
-            className={inputClass}
-          />
-          {needsTwoOpp ? (
-            <input
-              name="opp2"
-              placeholder="2ᵉ adversaire"
-              className={`${inputClass} mt-2`}
-            />
+
+        {/* Adversaires (B) */}
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-semibold text-slate-500">Adversaires</p>
+          {opps.map((value, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <input
+                name="opp"
+                value={value}
+                required={i === 0}
+                onChange={(e) => updateAt(setOpps, i, e.target.value)}
+                placeholder="Pseudo ou nom"
+                className={inputClass}
+              />
+              {opps.length > 1 ? (
+                <button
+                  type="button"
+                  onClick={() => removeAt(setOpps, i)}
+                  aria-label="Retirer"
+                  className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                >
+                  <X className="size-4" />
+                </button>
+              ) : null}
+            </div>
+          ))}
+          {opps.length < MAX_PER_SIDE ? (
+            <button
+              type="button"
+              onClick={() => setOpps((o) => [...o, ""])}
+              className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-blue-600 hover:underline"
+            >
+              <Plus className="size-3.5" /> Ajouter
+            </button>
           ) : null}
         </div>
       </div>
@@ -125,7 +152,9 @@ export function NewMatchForm({
       <div>
         <p className="text-sm font-medium">Résultat</p>
         {!gameId ? (
-          <p className="mt-1 text-xs text-slate-400">Choisis d&apos;abord un jeu.</p>
+          <p className="mt-1 text-xs text-slate-400">
+            Choisis d&apos;abord un jeu.
+          </p>
         ) : hasScore ? (
           <div className="mt-2 flex items-end gap-3">
             <label className="flex-1 text-xs text-slate-500">
@@ -135,10 +164,9 @@ export function NewMatchForm({
                 type="number"
                 min={0}
                 required
-                className={inputClass}
+                className={`${inputClass} mt-1`}
               />
             </label>
-            <span className="pb-2 text-slate-400">–</span>
             <label className="flex-1 text-xs text-slate-500">
               Adverse
               <input
@@ -146,7 +174,7 @@ export function NewMatchForm({
                 type="number"
                 min={0}
                 required
-                className={inputClass}
+                className={`${inputClass} mt-1`}
               />
             </label>
           </div>
@@ -169,7 +197,7 @@ export function NewMatchForm({
         <label htmlFor="location" className="block text-sm font-medium">
           Lieu <span className="text-slate-400">(optionnel)</span>
         </label>
-        <input id="location" name="location" className={inputClass} />
+        <input id="location" name="location" className={`${inputClass} mt-1`} />
       </div>
 
       {state.error ? (

@@ -76,7 +76,7 @@ export default async function ProfilPage() {
 
   const ecoleLabel = profile.is_external
     ? "Exté"
-    : (profile.schools?.name ?? "—");
+    : (profile.schools?.name ?? "-");
   const anneeLabel = profile.annee ? ANNEE_LABELS[profile.annee] : null;
 
   return (
@@ -90,7 +90,7 @@ export default async function ProfilPage() {
         </div>
         <div className="bg-white p-4">
           <dt className="text-xs text-slate-500">Année</dt>
-          <dd className="mt-1 font-medium">{anneeLabel ?? "—"}</dd>
+          <dd className="mt-1 font-medium">{anneeLabel ?? "-"}</dd>
         </div>
         <div className="bg-white p-4">
           <dt className="text-xs text-slate-500">Rôle</dt>

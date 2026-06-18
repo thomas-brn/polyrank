@@ -73,7 +73,7 @@ Au lancement, **2 jeux** seulement :
 | **FifaChamp** | ✅ (buts) | score par camp + vainqueur |
 | **CoinCoin** | ❌ | vainqueur / perdant seulement |
 
-**Format** (par match) : **1v1** ou **2v2** ; le **1v2** est possible mais rare.
+**Format** (par match) : nombre de joueurs libre, **jusqu'à 4 par camp** (1v1, 2v2, 1v2, 3v3…), saisi en ajoutant les participants. Stocké en `format` (ex. `2V2`).
 
 **Une seule manche par match** (pas de manches multiples).
 

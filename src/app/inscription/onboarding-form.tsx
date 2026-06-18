@@ -31,7 +31,7 @@ export function OnboardingForm({ schools }: { schools: School[] }) {
         </label>
         <input id="pseudo" name="pseudo" required className={inputClass} />
         <p className="mt-1 text-xs text-amber-600">
-          ⚠️ Ton pseudo est <strong>public</strong> — évite ton nom et ton
+          ⚠️ Ton pseudo est <strong>public</strong>, évite ton nom et ton
           prénom.
         </p>
       </div>
