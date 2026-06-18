@@ -1,13 +1,15 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Plus, X } from "lucide-react";
+import { Plus } from "lucide-react";
 
 import { createMatch, type NewMatchState } from "./actions";
+import { PlayerCombobox, type Player } from "./player-combobox";
 
 type Game = { id: string; name: string; has_score: boolean };
 
 const MAX_PER_SIDE = 4;
+const emptyPlayer = (): Player => ({ name: "", profileId: null });
 
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
@@ -15,13 +17,15 @@ const inputClass =
 export function NewMatchForm({
   games,
   myPseudo,
+  myId,
 }: {
   games: Game[];
   myPseudo: string;
+  myId: string;
 }) {
   const [gameId, setGameId] = useState("");
-  const [mates, setMates] = useState<string[]>([]);
-  const [opps, setOpps] = useState<string[]>([""]);
+  const [mates, setMates] = useState<Player[]>([]);
+  const [opps, setOpps] = useState<Player[]>([emptyPlayer()]);
   const [state, formAction, pending] = useActionState<NewMatchState, FormData>(
     createMatch,
     {},
@@ -31,19 +35,32 @@ export function NewMatchForm({
   const hasScore = game?.has_score ?? false;
   const aTotal = 1 + mates.length;
 
+  const hasTaggedOpp = opps.some((o) => o.profileId);
+  const namesFilled =
+    mates.every((m) => m.name.trim()) && opps.every((o) => o.name.trim());
+  const canSubmit = Boolean(gameId) && hasTaggedOpp && namesFilled;
+
   const updateAt = (
-    set: typeof setMates,
+    set: React.Dispatch<React.SetStateAction<Player[]>>,
     index: number,
-    value: string,
-  ) => set((list) => list.map((v, i) => (i === index ? value : v)));
-  const removeAt = (set: typeof setMates, index: number) =>
-    set((list) => list.filter((_, i) => i !== index));
+    player: Player,
+  ) => set((list) => list.map((p, i) => (i === index ? player : p)));
+  const removeAt = (
+    set: React.Dispatch<React.SetStateAction<Player[]>>,
+    index: number,
+  ) => set((list) => list.filter((_, i) => i !== index));
 
   return (
     <form
       action={formAction}
       className="flex flex-col gap-6 rounded-xl border border-slate-200 bg-white p-6"
     >
+      <input
+        type="hidden"
+        name="players"
+        value={JSON.stringify({ mates, opps })}
+      />
+
       {/* Jeu */}
       <fieldset>
         <legend className="text-sm font-medium">Jeu</legend>
@@ -81,29 +98,21 @@ export function NewMatchForm({
             disabled
             className={`${inputClass} bg-slate-100 text-slate-600`}
           />
-          {mates.map((value, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <input
-                name="mate"
-                value={value}
-                onChange={(e) => updateAt(setMates, i, e.target.value)}
-                placeholder="Coéquipier"
-                className={inputClass}
-              />
-              <button
-                type="button"
-                onClick={() => removeAt(setMates, i)}
-                aria-label="Retirer"
-                className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
+          {mates.map((player, i) => (
+            <PlayerCombobox
+              key={i}
+              value={player}
+              required
+              removable
+              excludeId={myId}
+              onChange={(p) => updateAt(setMates, i, p)}
+              onRemove={() => removeAt(setMates, i)}
+            />
           ))}
           {aTotal < MAX_PER_SIDE ? (
             <button
               type="button"
-              onClick={() => setMates((m) => [...m, ""])}
+              onClick={() => setMates((m) => [...m, emptyPlayer()])}
               className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-blue-600 hover:underline"
             >
               <Plus className="size-3.5" /> Ajouter
@@ -114,32 +123,21 @@ export function NewMatchForm({
         {/* Adversaires (B) */}
         <div className="flex flex-col gap-2">
           <p className="text-xs font-semibold text-slate-500">Adversaires</p>
-          {opps.map((value, i) => (
-            <div key={i} className="flex items-center gap-1">
-              <input
-                name="opp"
-                value={value}
-                required={i === 0}
-                onChange={(e) => updateAt(setOpps, i, e.target.value)}
-                placeholder="Pseudo ou nom"
-                className={inputClass}
-              />
-              {opps.length > 1 ? (
-                <button
-                  type="button"
-                  onClick={() => removeAt(setOpps, i)}
-                  aria-label="Retirer"
-                  className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                >
-                  <X className="size-4" />
-                </button>
-              ) : null}
-            </div>
+          {opps.map((player, i) => (
+            <PlayerCombobox
+              key={i}
+              value={player}
+              required
+              removable={opps.length > 1}
+              excludeId={myId}
+              onChange={(p) => updateAt(setOpps, i, p)}
+              onRemove={() => removeAt(setOpps, i)}
+            />
           ))}
           {opps.length < MAX_PER_SIDE ? (
             <button
               type="button"
-              onClick={() => setOpps((o) => [...o, ""])}
+              onClick={() => setOpps((o) => [...o, emptyPlayer()])}
               className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-blue-600 hover:underline"
             >
               <Plus className="size-3.5" /> Ajouter
@@ -147,6 +145,13 @@ export function NewMatchForm({
           ) : null}
         </div>
       </div>
+
+      {!hasTaggedOpp ? (
+        <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
+          Tague au moins un adversaire inscrit avec <strong>@</strong> : lui seul
+          pourra valider le match.
+        </p>
+      ) : null}
 
       {/* Résultat */}
       <div>
@@ -206,7 +211,7 @@ export function NewMatchForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !canSubmit}
         className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
         {pending ? "Enregistrement…" : "Enregistrer le match"}

@@ -8,6 +8,8 @@ export type NewMatchState = { error?: string };
 
 const MAX_PER_SIDE = 4;
 
+type Player = { name: string; profileId: string | null };
+
 type ParticipantInsert = {
   match_id: string;
   side: "A" | "B";
@@ -15,6 +17,22 @@ type ParticipantInsert = {
   guest_name: string | null;
   is_creator: boolean;
 };
+
+function cleanPlayers(raw: unknown): Player[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((p) => ({
+      name:
+        p && typeof (p as Player).name === "string"
+          ? (p as Player).name.replace(/^@/, "").trim()
+          : "",
+      profileId:
+        p && typeof (p as Player).profileId === "string"
+          ? (p as Player).profileId
+          : null,
+    }))
+    .filter((p) => p.name.length > 0);
+}
 
 export async function createMatch(
   _prev: NewMatchState,
@@ -33,20 +51,28 @@ export async function createMatch(
   const winnerInput = String(formData.get("winner") ?? "");
   const location = String(formData.get("location") ?? "").trim() || null;
 
-  const mates = formData
-    .getAll("mate")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
-  const opps = formData
-    .getAll("opp")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  let parsed: { mates?: unknown; opps?: unknown } = {};
+  try {
+    parsed = JSON.parse(String(formData.get("players") ?? "{}"));
+  } catch {
+    return { error: "Données du formulaire invalides." };
+  }
+  const mates = cleanPlayers(parsed.mates).slice(0, MAX_PER_SIDE - 1);
+  const opps = cleanPlayers(parsed.opps).slice(0, MAX_PER_SIDE);
 
   if (!gameId) return { error: "Choisis un jeu." };
   if (opps.length < 1) return { error: "Indique au moins un adversaire." };
-  if (opps.length > MAX_PER_SIDE) return { error: "4 adversaires maximum." };
-  if (mates.length > MAX_PER_SIDE - 1) {
-    return { error: "4 joueurs maximum dans ton équipe." };
+
+  if (opps.some((o) => o.profileId === user.id)) {
+    return { error: "Tu ne peux pas être ton propre adversaire." };
+  }
+
+  // Au moins un adversaire doit avoir un compte (taggé) : lui seul peut valider.
+  if (!opps.some((o) => o.profileId)) {
+    return {
+      error:
+        "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir valider le match.",
+    };
   }
 
   const { data: game } = await supabase
@@ -82,21 +108,6 @@ export async function createMatch(
     winner = winnerInput;
   }
 
-  // Résout un nom en profil tagué (pseudo exact, insensible à la casse) ou en invité.
-  async function resolve(
-    name: string,
-  ): Promise<{ profile_id: string | null; guest_name: string | null }> {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id")
-      .ilike("pseudo", name)
-      .limit(2);
-    if (data && data.length === 1) {
-      return { profile_id: data[0].id as string, guest_name: null };
-    }
-    return { profile_id: null, guest_name: name };
-  }
-
   const { data: match, error: matchErr } = await supabase
     .from("matches")
     .insert({
@@ -115,8 +126,15 @@ export async function createMatch(
     return { error: matchErr?.message ?? "Échec de la création du match." };
   }
 
-  // is_creator est posé explicitement sur CHAQUE participant : sinon PostgREST
-  // envoie NULL pour les objets où la clé manque (violation NOT NULL).
+  // Un joueur taggé -> profile_id ; sinon -> guest_name. is_creator posé partout.
+  const toParticipant = (side: "A" | "B", p: Player): ParticipantInsert => ({
+    match_id: match.id,
+    side,
+    profile_id: p.profileId,
+    guest_name: p.profileId ? null : p.name,
+    is_creator: false,
+  });
+
   const participants: ParticipantInsert[] = [
     {
       match_id: match.id,
@@ -125,23 +143,9 @@ export async function createMatch(
       guest_name: null,
       is_creator: true,
     },
+    ...mates.map((p) => toParticipant("A", p)),
+    ...opps.map((p) => toParticipant("B", p)),
   ];
-  for (const name of mates) {
-    participants.push({
-      match_id: match.id,
-      side: "A",
-      ...(await resolve(name)),
-      is_creator: false,
-    });
-  }
-  for (const name of opps) {
-    participants.push({
-      match_id: match.id,
-      side: "B",
-      ...(await resolve(name)),
-      is_creator: false,
-    });
-  }
 
   const { error: partErr } = await supabase
     .from("match_participants")

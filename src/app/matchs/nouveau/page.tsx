@@ -46,7 +46,7 @@ export default async function NouveauMatchPage() {
         title="Saisir un match"
         subtitle="Résultat rapide. La validation par l'adversaire viendra ensuite."
       />
-      <NewMatchForm games={games ?? []} myPseudo={profile.pseudo} />
+      <NewMatchForm games={games ?? []} myPseudo={profile.pseudo} myId={user.id} />
     </div>
   );
 }
