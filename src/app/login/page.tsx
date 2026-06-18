@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { ComingSoon, PageHeader } from "@/components/page-header";
@@ -7,10 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<"email" | "code">("email");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
 
   if (!isSupabaseConfigured) {
     return (
@@ -25,7 +28,7 @@ export default function LoginPage() {
     );
   }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function handleEmailSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
     setError(null);
@@ -33,10 +36,7 @@ export default function LoginPage() {
     const supabase = createClient();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { shouldCreateUser: true },
     });
 
     setLoading(false);
@@ -46,23 +46,80 @@ export default function LoginPage() {
       return;
     }
 
-    setSent(true);
+    setStep("code");
   }
 
-  if (sent) {
+  async function handleCodeSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email,
+      token: code.trim(),
+      type: "email",
+    });
+
+    setLoading(false);
+
+    if (verifyError) {
+      setError("Code invalide ou expiré. Réessaie.");
+      return;
+    }
+
+    router.push("/inscription");
+  }
+
+  if (step === "code") {
     return (
       <div className="mx-auto max-w-sm">
-        <PageHeader title="Vérifie tes mails" />
-        <div className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
-          <p>
-            On t&apos;a envoyé un lien de connexion à{" "}
-            <strong className="text-slate-900">{email}</strong>.
-          </p>
-          <p className="mt-2">
-            Ouvre-le <strong>sur cet appareil</strong> pour finaliser la
-            connexion. Pense à vérifier tes spams.
-          </p>
-        </div>
+        <PageHeader
+          title="Saisis le code"
+          subtitle={`Code envoyé à ${email}. Vérifie tes spams.`}
+        />
+        <form
+          onSubmit={handleCodeSubmit}
+          className="rounded-xl border border-slate-200 bg-white p-6"
+        >
+          <label htmlFor="code" className="block text-sm font-medium">
+            Code à 6 chiffres
+          </label>
+          <input
+            id="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            required
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            placeholder="123456"
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-center text-xl font-mono tracking-widest outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+          />
+
+          {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+
+          <button
+            type="submit"
+            disabled={loading || code.length < 6}
+            className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+          >
+            {loading ? "Vérification…" : "Se connecter"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setStep("email");
+              setCode("");
+              setError(null);
+            }}
+            className="mt-3 w-full text-center text-xs text-slate-500 hover:underline"
+          >
+            Changer d&apos;adresse email
+          </button>
+        </form>
       </div>
     );
   }
@@ -71,10 +128,10 @@ export default function LoginPage() {
     <div className="mx-auto max-w-sm">
       <PageHeader
         title="Connexion"
-        subtitle="Reçois un lien de connexion par email."
+        subtitle="Reçois un code de connexion par email."
       />
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleEmailSubmit}
         className="rounded-xl border border-slate-200 bg-white p-6"
       >
         <label htmlFor="email" className="block text-sm font-medium">
@@ -86,7 +143,7 @@ export default function LoginPage() {
           required
           autoComplete="email"
           value={email}
-          onChange={(event) => setEmail(event.target.value)}
+          onChange={(e) => setEmail(e.target.value)}
           placeholder="prenom.nom@etu.polytech.fr"
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
         />
@@ -98,7 +155,7 @@ export default function LoginPage() {
           disabled={loading}
           className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
         >
-          {loading ? "Envoi…" : "Recevoir le lien"}
+          {loading ? "Envoi…" : "Recevoir le code"}
         </button>
       </form>
     </div>
