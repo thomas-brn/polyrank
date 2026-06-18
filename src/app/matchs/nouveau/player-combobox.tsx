@@ -18,23 +18,25 @@ export function PlayerCombobox({
   onRemove,
   removable = false,
   required = false,
-  excludeId,
+  excludeIds,
 }: {
   value: Player;
   onChange: (player: Player) => void;
   onRemove?: () => void;
   removable?: boolean;
   required?: boolean;
-  excludeId?: string;
+  excludeIds?: string[];
 }) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   const tagged = value.profileId != null;
+  const excludeKey = (excludeIds ?? []).join(",");
 
   useEffect(() => {
     const q = value.name.replace(/^@/, "").trim();
+    const excluded = excludeKey ? excludeKey.split(",") : [];
     let active = true;
     const timer = setTimeout(async () => {
       if (tagged || q.length < 1) {
@@ -50,10 +52,10 @@ export function PlayerCombobox({
         .select("id, pseudo")
         .ilike("pseudo", `%${q}%`)
         .not("pseudo", "is", null)
-        .limit(6);
+        .limit(8);
       if (!active) return;
       const list = ((data ?? []) as Suggestion[]).filter(
-        (s) => s.id !== excludeId,
+        (s) => !excluded.includes(s.id),
       );
       setSuggestions(list);
       setOpen(list.length > 0);
@@ -63,7 +65,7 @@ export function PlayerCombobox({
       active = false;
       clearTimeout(timer);
     };
-  }, [value.name, tagged, excludeId]);
+  }, [value.name, tagged, excludeKey]);
 
   useEffect(() => {
     function onDocClick(event: MouseEvent) {

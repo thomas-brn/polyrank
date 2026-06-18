@@ -32,7 +32,7 @@ function useIsActive() {
     href === "/" ? pathname === "/" : pathname === href;
 }
 
-/** Barre de navigation horizontale — affichée sur desktop uniquement. */
+/** Barre de navigation horizontale (desktop uniquement). */
 export function TopNav() {
   const isActive = useIsActive();
 
@@ -64,7 +64,7 @@ export function TopNav() {
   );
 }
 
-/** Barre de navigation fixe en bas — affichée sur mobile uniquement. */
+/** Barre de navigation fixe en bas (mobile uniquement). */
 export function BottomNav() {
   const isActive = useIsActive();
 

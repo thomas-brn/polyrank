@@ -40,6 +40,13 @@ export function NewMatchForm({
     mates.every((m) => m.name.trim()) && opps.every((o) => o.name.trim());
   const canSubmit = Boolean(gameId) && hasTaggedOpp && namesFilled;
 
+  // Joueurs inscrits déjà présents (à exclure des suggestions, anti-doublon).
+  const usedIds = [
+    myId,
+    ...mates.map((m) => m.profileId),
+    ...opps.map((o) => o.profileId),
+  ].filter((x): x is string => Boolean(x));
+
   const updateAt = (
     set: React.Dispatch<React.SetStateAction<Player[]>>,
     index: number,
@@ -104,7 +111,7 @@ export function NewMatchForm({
               value={player}
               required
               removable
-              excludeId={myId}
+              excludeIds={usedIds}
               onChange={(p) => updateAt(setMates, i, p)}
               onRemove={() => removeAt(setMates, i)}
             />
@@ -129,7 +136,7 @@ export function NewMatchForm({
               value={player}
               required
               removable={opps.length > 1}
-              excludeId={myId}
+              excludeIds={usedIds}
               onChange={(p) => updateAt(setOpps, i, p)}
               onRemove={() => removeAt(setOpps, i)}
             />

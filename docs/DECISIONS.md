@@ -37,7 +37,15 @@ Après l'email (OTP), l'utilisateur complète son profil :
 - **École** — parmi les 16 du réseau Polytech (Angers, Annecy-Chambéry, Clermont, Dijon, Grenoble, Lille, Lyon, Marseille, Montpellier, Nancy, Nantes, Nice Sophia, Orléans, Paris-Saclay, Sorbonne, Tours) **ou** « Exté » (extérieur au réseau).
 - **Année** — obligatoire **si une école est choisie** (pas pour les Exté) : `Peip1`, `Peip2`, `3A`, `4A`, `5A`, ou `Vieux con` (anciens).
 - **Majorité** — case obligatoire « J'ai plus de 18 ans ».
-- **Prévention alcool** — message de modération affiché (cf. encart en tête).
+- **Prévention alcool** : message de modération affiché (cf. encart en tête).
+
+#### Profil joueur (consultation & édition)
+
+- **Pseudo unique** (insensible à la casse) ; disponibilité vérifiée en direct à la saisie.
+- L'utilisateur peut modifier **école, année et pseudo**. Le **pseudo est limité à 1 changement par mois** ; les anciens pseudos sont historisés.
+- Les matchs référencent l'**`id`** du compte (pas le pseudo) : un changement de pseudo se répercute partout automatiquement.
+- **Recherche de joueurs** (barre dans le Classement) menant au **profil public** `/joueurs/[id]` : stats (matchs par jeu, victoires, école, année, coéquipiers les plus fréquents) et anciens pseudos (champ dépliable sous le pseudo actuel).
+- **Anti-doublon** : un même joueur ne peut pas être ajouté deux fois dans un match.
 
 #### Cycle de vie d'un match
 

@@ -3,24 +3,33 @@
 import { useActionState, useState } from "react";
 
 import { PseudoField } from "@/components/pseudo-field";
-import { ALCOHOL_NOTICE, ANNEES, EXTERNAL_VALUE } from "@/lib/constants";
-import { completeProfile, type OnboardingState } from "./actions";
+import { ANNEES, EXTERNAL_VALUE } from "@/lib/constants";
+import { updateProfile, type EditState } from "./actions";
 
 type School = { id: string; name: string };
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
 
-export function OnboardingForm({
+export function EditProfileForm({
   schools,
   selfId,
+  initial,
 }: {
   schools: School[];
   selfId: string;
+  initial: {
+    pseudo: string;
+    schoolId: string | null;
+    isExternal: boolean;
+    annee: string | null;
+  };
 }) {
-  const [ecole, setEcole] = useState("");
-  const [state, formAction, pending] = useActionState<OnboardingState, FormData>(
-    completeProfile,
+  const [ecole, setEcole] = useState(
+    initial.isExternal ? EXTERNAL_VALUE : (initial.schoolId ?? ""),
+  );
+  const [state, formAction, pending] = useActionState<EditState, FormData>(
+    updateProfile,
     {},
   );
 
@@ -31,16 +40,13 @@ export function OnboardingForm({
       action={formAction}
       className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6"
     >
-      {/* Pseudo */}
       <div>
-        <PseudoField selfId={selfId} />
-        <p className="mt-1 text-xs text-amber-600">
-          ⚠️ Ton pseudo est <strong>public</strong>, évite ton nom et ton
-          prénom.
+        <PseudoField selfId={selfId} originalPseudo={initial.pseudo} />
+        <p className="mt-1 text-xs text-slate-400">
+          Changement limité à une fois par mois.
         </p>
       </div>
 
-      {/* École */}
       <div>
         <label htmlFor="ecole" className="block text-sm font-medium">
           École
@@ -50,7 +56,7 @@ export function OnboardingForm({
           name="ecole"
           required
           value={ecole}
-          onChange={(event) => setEcole(event.target.value)}
+          onChange={(e) => setEcole(e.target.value)}
           className={inputClass}
         >
           <option value="" disabled>
@@ -65,7 +71,6 @@ export function OnboardingForm({
         </select>
       </div>
 
-      {/* Année (si une école est choisie) */}
       {showAnnee ? (
         <div>
           <label htmlFor="annee" className="block text-sm font-medium">
@@ -75,7 +80,7 @@ export function OnboardingForm({
             id="annee"
             name="annee"
             required
-            defaultValue=""
+            defaultValue={initial.annee ?? ""}
             className={inputClass}
           >
             <option value="" disabled>
@@ -90,22 +95,6 @@ export function OnboardingForm({
         </div>
       ) : null}
 
-      {/* Majorité */}
-      <label className="flex items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="is_adult"
-          required
-          className="mt-0.5 size-4 rounded border-slate-300"
-        />
-        <span>J&apos;ai plus de 18 ans.</span>
-      </label>
-
-      {/* Prévention alcool */}
-      <p className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-        🍺 {ALCOHOL_NOTICE}
-      </p>
-
       {state.error ? (
         <p className="text-sm text-red-600">{state.error}</p>
       ) : null}
@@ -115,7 +104,7 @@ export function OnboardingForm({
         disabled={pending}
         className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
-        {pending ? "Enregistrement…" : "Créer mon profil"}
+        {pending ? "Enregistrement…" : "Enregistrer"}
       </button>
     </form>
   );

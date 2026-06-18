@@ -3,9 +3,16 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { OnboardingForm } from "./onboarding-form";
+import { EditProfileForm } from "./edit-profile-form";
 
-export default async function InscriptionPage() {
+type ProfileRow = {
+  pseudo: string | null;
+  school_id: string | null;
+  is_external: boolean;
+  annee: string | null;
+};
+
+export default async function ModifierProfilPage() {
   if (!isSupabaseConfigured) {
     redirect("/");
   }
@@ -19,15 +26,14 @@ export default async function InscriptionPage() {
     redirect("/login");
   }
 
-  // Profil déjà complété ? → on file vers le profil.
   const { data: profile } = await supabase
     .from("profiles")
-    .select("pseudo")
+    .select("pseudo, school_id, is_external, annee")
     .eq("id", user.id)
-    .single();
+    .single<ProfileRow>();
 
-  if (profile?.pseudo) {
-    redirect("/profil");
+  if (!profile?.pseudo) {
+    redirect("/inscription");
   }
 
   const { data: schools } = await supabase
@@ -37,11 +43,17 @@ export default async function InscriptionPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <PageHeader
-        title="Bienvenue 👋"
-        subtitle="Complète ton profil pour commencer à jouer."
+      <PageHeader title="Modifier mon profil" />
+      <EditProfileForm
+        schools={schools ?? []}
+        selfId={user.id}
+        initial={{
+          pseudo: profile.pseudo,
+          schoolId: profile.school_id,
+          isExternal: profile.is_external,
+          annee: profile.annee,
+        }}
       />
-      <OnboardingForm schools={schools ?? []} selfId={user.id} />
     </div>
   );
 }

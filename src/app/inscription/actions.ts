@@ -47,6 +47,17 @@ export async function completeProfile(
     anneeVal = annee;
   }
 
+  // Disponibilité du pseudo (insensible à la casse).
+  const { data: taken } = await supabase
+    .from("profiles")
+    .select("id")
+    .ilike("pseudo", pseudo)
+    .neq("id", user.id)
+    .limit(1);
+  if (taken && taken.length > 0) {
+    return { error: "Ce pseudo est déjà pris." };
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({

@@ -100,7 +100,19 @@ export default async function ProfilPage() {
         </div>
       </dl>
 
-      <div className="mt-6">
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Link
+          href="/profil/modifier"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+        >
+          Modifier mon profil
+        </Link>
+        <Link
+          href={`/joueurs/${user.id}`}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+        >
+          Mon profil public
+        </Link>
         <LogoutButton />
       </div>
     </div>

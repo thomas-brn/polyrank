@@ -75,6 +75,20 @@ export async function createMatch(
     };
   }
 
+  // Anti-doublon : un même joueur ne peut pas figurer deux fois dans le match.
+  const identityKeys = [
+    `id:${user.id}`,
+    ...mates.map((p) =>
+      p.profileId ? `id:${p.profileId}` : `name:${p.name.toLowerCase()}`,
+    ),
+    ...opps.map((p) =>
+      p.profileId ? `id:${p.profileId}` : `name:${p.name.toLowerCase()}`,
+    ),
+  ];
+  if (new Set(identityKeys).size !== identityKeys.length) {
+    return { error: "Un même joueur est ajouté plusieurs fois." };
+  }
+
   const { data: game } = await supabase
     .from("games")
     .select("id, has_score")
