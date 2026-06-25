@@ -34,7 +34,7 @@ Deux rôles uniquement, pas de rôle "capitaine".
 Après l'email (OTP), l'utilisateur complète son profil :
 
 - **Pseudo** (public) — affiché partout. ⚠️ On l'invite explicitement à **éviter ses nom/prénom** puisque c'est public.
-- **École** — parmi les 16 du réseau Polytech (Angers, Annecy-Chambéry, Clermont, Dijon, Grenoble, Lille, Lyon, Marseille, Montpellier, Nancy, Nantes, Nice Sophia, Orléans, Paris-Saclay, Sorbonne, Tours) **ou** « Exté » (extérieur au réseau).
+- **École** — parmi les 16 du réseau (Angers, Annecy, Chambéry, Clermont, Dijon, Grenoble, Lille, Lyon, Marseille, Montpellier, Nancy, Nantes, Nice Sophia, Orléans, Paris-Saclay, Sorbonne, Tours, Gavy, Le Creusot) **ou** « Exté » (extérieur au réseau).
 - **Année** — obligatoire **si une école est choisie** (pas pour les Exté) : `Peip1`, `Peip2`, `3A`, `4A`, `5A`, ou `Vieux con` (anciens).
 - **Majorité** — case obligatoire « J'ai plus de 18 ans ».
 - **Prévention alcool** : message de modération affiché (cf. encart en tête).

@@ -1,4 +1,4 @@
-# Plan projet — Polytech Sports Tracker
+# Plan projet — PolyRank
 
 Site de saisie des résultats de matchs et leaderboards pour élèves ingénieurs
 
@@ -29,7 +29,7 @@ Accueil → Leaderboards → Saisie de match → Profil → Admin. Arborescence 
 ## Phase 2 — Authentification des élèves (~1 semaine)
 
 ### Choisir la méthode d'authentification
-- **Option A — SSO Polytech :** connexion via l'ENT ou compte Microsoft/Google académique (recommandé, zéro gestion de mots de passe).
+- **Option A — SSO :** connexion via l'ENT ou compte Microsoft/Google académique (recommandé, zéro gestion de mots de passe).
 - **Option B — Inscription manuelle :** l'admin crée les comptes, l'élève reçoit un email d'invitation.
 - **Option C — Code promo :** un code secret permet l'inscription (simple mais moins sécurisé).
 
@@ -108,7 +108,7 @@ Rate limiting sur l'API, validation côté serveur de tous les scores, logs d'ac
 `Sécurité` `Backend`
 
 ### Déploiement & nom de domaine
-Héberger le site (Vercel, Railway, VPS Polytech…), configurer un domaine type sports.polytech-xxx.fr, HTTPS.  
+Héberger le site (Vercel, Railway, VPS…), configurer un domaine type polyrank.fr, HTTPS.  
 `DevOps`
 
 ### Tests & bêta avec un groupe pilote

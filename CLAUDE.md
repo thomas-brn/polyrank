@@ -8,7 +8,7 @@ Never add a `Co-Authored-By: Claude` trailer to commit messages.
 
 ## Project overview
 
-**PolyRank** (Polytech Sports Tracker) — a web app for engineering school students to submit match results and view leaderboards, organized by sport and by cohort (promo/classe). Future domain: **polyrank.fr**.
+**PolyRank**, a web app for engineering school students to submit match results and view leaderboards, organized by sport and by cohort (promo/classe). Future domain: **polyrank.fr**.
 
 Phase 1 (cadrage & architecture) is complete and the app is scaffolded. Most features are still placeholder pages, built out in later phases.
 
@@ -44,6 +44,7 @@ npm run lint
 - `src/components/` — shared UI (`site-nav` = responsive top/bottom nav, `page-header`).
 - `src/lib/supabase/` — `client.ts` (browser), `server.ts` (RSC/actions), `middleware.ts` (`updateSession` helper used by `proxy.ts`), `config.ts` (`isSupabaseConfigured` guard).
 - `supabase/migrations/` — versioned SQL schema (apply via Supabase SQL editor or `supabase db push`).
+- `docs/SCHEMA.md` — **current DB schema reference** (tables, columns, relations, RLS, functions). Read this before touching the database or writing queries.
 - `docs/` — `DECISIONS.md` (architecture decisions), `plan.md` / `plan.html` (project plan).
 
 ## Architecture decisions (see docs/DECISIONS.md)
@@ -79,15 +80,17 @@ SOUMIS → VALIDÉ
 
 ### Permissions summary
 
-| Action | Élève | Admin |
-|---|---|---|
-| Submit a score | ✅ | ✅ |
-| Edit an unvalidated match | ✅ (creator only) | ✅ |
-| Edit a validated match | ✅ (creator, triggers re-validation) | ✅ |
-| Validate an opponent's score | ✅ | ✅ |
-| Contest a score | ✅ | ✅ |
-| Delete/correct a disputed match | ❌ | ✅ |
-| Manage accounts | ❌ | ✅ |
+
+| Action                          | Élève                               | Admin |
+| ------------------------------- | ----------------------------------- | ----- |
+| Submit a score                  | ✅                                   | ✅     |
+| Edit an unvalidated match       | ✅ (creator only)                    | ✅     |
+| Edit a validated match          | ✅ (creator, triggers re-validation) | ✅     |
+| Validate an opponent's score    | ✅                                   | ✅     |
+| Contest a score                 | ✅                                   | ✅     |
+| Delete/correct a disputed match | ❌                                   | ✅     |
+| Manage accounts                 | ❌                                   | ✅     |
+
 
 ## Project plan (see docs/plan.md)
 
@@ -98,3 +101,4 @@ SOUMIS → VALIDÉ
 3. **Phase 3 — Match entry & validation** (~2 weeks): submission form, validation system, notifications, contest/edit flow, match history
 4. **Phase 4 — Leaderboards & stats** (~2 weeks): ranking metrics (points/Elo TBD), global leaderboard, per-promo filter, player profile/stats page
 5. **Phase 5 — Admin & deployment** (~2 weeks): admin UI, mobile responsiveness, rate limiting/anti-cheat, deployment, beta test
+
