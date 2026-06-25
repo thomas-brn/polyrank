@@ -9,7 +9,6 @@ type ProfileRow = {
   id: string;
   pseudo: string | null;
   annee: string | null;
-  is_external: boolean;
   schools: { name: string } | null;
 };
 
@@ -44,7 +43,7 @@ export default async function JoueurPage({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, pseudo, annee, is_external, schools(name)")
+    .select("id, pseudo, annee, schools(name)")
     .eq("id", id)
     .single<ProfileRow>();
 
@@ -104,9 +103,7 @@ export default async function JoueurPage({
     .eq("profile_id", id)
     .order("changed_at", { ascending: false });
 
-  const ecole = profile.is_external
-    ? "Exté"
-    : (profile.schools?.name ?? "-");
+  const ecole = profile.schools?.name ?? "-";
   const anneeLabel = profile.annee ? ANNEE_LABELS[profile.annee] : null;
 
   return (

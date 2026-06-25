@@ -1,11 +1,12 @@
-import { ComingSoon, PageHeader } from "@/components/page-header";
+import { ComingSoon } from "@/components/page-header";
+import { PageHero } from "@/components/page-hero";
 
 export default function AdminPage() {
   return (
-    <div>
-      <PageHeader
+    <div className="flex flex-col gap-6">
+      <PageHero
         title="Administration"
-        subtitle="Gestion des comptes et arbitrage des matchs litigieux."
+        description="Gestion des comptes et arbitrage des matchs litigieux."
       />
       <ComingSoon>
         Le back-office admin (gérer les comptes, trancher les matchs contestés)

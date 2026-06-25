@@ -1,21 +1,25 @@
-import { ComingSoon, PageHeader } from "@/components/page-header";
+import { ComingSoon } from "@/components/page-header";
+import { PageHero } from "@/components/page-hero";
 import { PlayerSearch } from "@/components/player-search";
+import { getMode, MODES } from "@/lib/mode";
 
-export default function ClassementPage() {
+export default async function ClassementPage() {
+  const sport = MODES[await getMode()].sport;
+
   return (
-    <div>
-      <PageHeader
-        title="Classement"
-        subtitle="Le top par jeu, filtrable par école."
+    <div className="flex flex-col gap-6">
+      <PageHero
+        title={`Classement ${sport}`}
+        description={`Le top des joueurs ${sport}, filtrable par école.`}
       />
 
-      <div className="mb-6">
+      <div>
         <PlayerSearch />
       </div>
 
       <ComingSoon>
         Le calcul du classement (points ou Elo) est défini en Phase 4. Cette page
-        affichera bientôt le leaderboard avec filtres par jeu et par école.
+        affichera bientôt le leaderboard {sport} avec filtres par école.
       </ComingSoon>
     </div>
   );

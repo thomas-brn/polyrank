@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
 
 type Availability = "checking" | "available" | "taken" | null;
 
@@ -13,7 +13,7 @@ export function PseudoField({
   selfId,
   originalPseudo = "",
 }: {
-  selfId: string;
+  selfId: string | null;
   originalPseudo?: string;
 }) {
   const [value, setValue] = useState(originalPseudo);
@@ -21,12 +21,15 @@ export function PseudoField({
 
   const trimmed = value.trim();
   const isEmpty = trimmed.length === 0;
+  // Lettres (accents inclus), chiffres, - et _
+  const PSEUDO_RE = /^[a-zA-Z0-9À-ɏ_-]+$/;
+  const hasInvalidChars = trimmed.length > 0 && !PSEUDO_RE.test(trimmed);
   const isCurrent =
     originalPseudo.length > 0 &&
     trimmed.toLowerCase() === originalPseudo.toLowerCase();
 
   useEffect(() => {
-    if (isEmpty || isCurrent) return;
+    if (isEmpty || isCurrent || hasInvalidChars) return;
     let active = true;
     const timer = setTimeout(async () => {
       const supabase = createClient();
@@ -68,7 +71,11 @@ export function PseudoField({
         onChange={(e) => handleChange(e.target.value)}
         className={inputClass}
       />
-      {isEmpty ? null : isCurrent ? (
+      {isEmpty ? null : hasInvalidChars ? (
+        <p className="mt-1 text-xs text-red-600">
+          Lettres, chiffres, - et _ uniquement.
+        </p>
+      ) : isCurrent ? (
         <p className="mt-1 text-xs text-slate-400">Ton pseudo actuel.</p>
       ) : availability === "checking" ? (
         <p className="mt-1 text-xs text-slate-400">Vérification…</p>
