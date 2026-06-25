@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { ANNEE_VALUES, EXTERNAL_VALUE } from "@/lib/constants";
+import { ANNEE_VALUES, EXTE_SLUG } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 
 export type EditState = { error?: string };
@@ -25,13 +25,20 @@ export async function updateProfile(
   const annee = String(formData.get("annee") ?? "");
 
   if (pseudo.length < 2) return { error: "Pseudo trop court (2 caractères min)." };
-  if (!ecole) return { error: "Choisis ton école (ou « Exté »)." };
+  if (!/^[a-zA-Z0-9À-ɏ_-]+$/.test(pseudo)) {
+    return { error: "Le pseudo ne peut contenir que des lettres, chiffres, - et _." };
+  }
+  if (!ecole) return { error: "Choisis ton école." };
 
-  const isExternal = ecole === EXTERNAL_VALUE;
-  let schoolId: string | null = null;
+  const { data: school } = await supabase
+    .from("schools")
+    .select("slug")
+    .eq("id", ecole)
+    .single<{ slug: string }>();
+
+  const isExte = school?.slug === EXTE_SLUG;
   let anneeVal: string | null = null;
-  if (!isExternal) {
-    schoolId = ecole;
+  if (!isExte) {
     if (!ANNEE_VALUES.includes(annee)) return { error: "Choisis ton année." };
     anneeVal = annee;
   }
@@ -46,13 +53,11 @@ export async function updateProfile(
     (current?.pseudo ?? "").toLowerCase() !== pseudo.toLowerCase();
 
   const update: Record<string, unknown> = {
-    school_id: schoolId,
-    is_external: isExternal,
+    school_id: ecole,
     annee: anneeVal,
   };
 
   if (pseudoChanged) {
-    // Limite : un changement de pseudo par mois.
     if (current?.pseudo_changed_at) {
       const nextAllowed = new Date(current.pseudo_changed_at);
       nextAllowed.setMonth(nextAllowed.getMonth() + 1);
@@ -62,7 +67,6 @@ export async function updateProfile(
         };
       }
     }
-    // Disponibilité.
     const { data: taken } = await supabase
       .from("profiles")
       .select("id")
@@ -81,7 +85,6 @@ export async function updateProfile(
     .eq("id", user.id);
   if (error) return { error: error.message };
 
-  // Historise l'ancien pseudo après coup.
   if (pseudoChanged && current?.pseudo) {
     await supabase
       .from("pseudo_history")

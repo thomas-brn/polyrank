@@ -3,13 +3,13 @@
 import { useActionState, useState } from "react";
 
 import { PseudoField } from "@/components/pseudo-field";
-import { ANNEES, EXTERNAL_VALUE } from "@/lib/constants";
+import { ANNEES, EXTE_SLUG } from "@/lib/constants";
 import { updateProfile, type EditState } from "./actions";
 
-type School = { id: string; name: string };
+type School = { id: string; name: string; slug: string };
 
 const inputClass =
-  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+  "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
 
 export function EditProfileForm({
   schools,
@@ -21,19 +21,17 @@ export function EditProfileForm({
   initial: {
     pseudo: string;
     schoolId: string | null;
-    isExternal: boolean;
     annee: string | null;
   };
 }) {
-  const [ecole, setEcole] = useState(
-    initial.isExternal ? EXTERNAL_VALUE : (initial.schoolId ?? ""),
-  );
+  const [ecole, setEcole] = useState(initial.schoolId ?? "");
   const [state, formAction, pending] = useActionState<EditState, FormData>(
     updateProfile,
     {},
   );
 
-  const showAnnee = ecole !== "" && ecole !== EXTERNAL_VALUE;
+  const selectedSchool = schools.find((s) => s.id === ecole);
+  const showAnnee = ecole !== "" && selectedSchool?.slug !== EXTE_SLUG;
 
   return (
     <form
@@ -62,12 +60,19 @@ export function EditProfileForm({
           <option value="" disabled>
             Choisis ton école…
           </option>
-          {schools.map((school) => (
+          {schools.filter((s) => s.slug !== EXTE_SLUG).map((school) => (
             <option key={school.id} value={school.id}>
               {school.name}
             </option>
           ))}
-          <option value={EXTERNAL_VALUE}>Exté (hors réseau Polytech)</option>
+          <option value="" disabled>
+            T'es même le bienvenu si t'es pas du réseau
+          </option>
+            {schools.filter((s) => s.slug === EXTE_SLUG).map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name}
+              </option>
+            ))}
         </select>
       </div>
 
@@ -102,7 +107,7 @@ export function EditProfileForm({
       <button
         type="submit"
         disabled={pending}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
       >
         {pending ? "Enregistrement…" : "Enregistrer"}
       </button>

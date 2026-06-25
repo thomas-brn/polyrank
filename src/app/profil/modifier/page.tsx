@@ -8,7 +8,6 @@ import { EditProfileForm } from "./edit-profile-form";
 type ProfileRow = {
   pseudo: string | null;
   school_id: string | null;
-  is_external: boolean;
   annee: string | null;
 };
 
@@ -28,7 +27,7 @@ export default async function ModifierProfilPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("pseudo, school_id, is_external, annee")
+    .select("pseudo, school_id, annee")
     .eq("id", user.id)
     .single<ProfileRow>();
 
@@ -38,7 +37,7 @@ export default async function ModifierProfilPage() {
 
   const { data: schools } = await supabase
     .from("schools")
-    .select("id, name")
+    .select("id, name, slug")
     .order("name");
 
   return (
@@ -50,7 +49,6 @@ export default async function ModifierProfilPage() {
         initial={{
           pseudo: profile.pseudo,
           schoolId: profile.school_id,
-          isExternal: profile.is_external,
           annee: profile.annee,
         }}
       />
