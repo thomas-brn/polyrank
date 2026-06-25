@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { ANNEE_VALUES, EXTERNAL_VALUE } from "@/lib/constants";
+import { ANNEE_VALUES, EXTE_SLUG } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/server";
 
 export type OnboardingState = { error?: string };
@@ -21,33 +21,35 @@ export async function completeProfile(
   }
 
   const pseudo = String(formData.get("pseudo") ?? "").trim();
-  const ecole = String(formData.get("ecole") ?? ""); // uuid d'école OU "EXTE"
+  const ecole = String(formData.get("ecole") ?? ""); // uuid d'école
   const annee = String(formData.get("annee") ?? "");
-  const isAdult = formData.get("is_adult") === "on";
 
   if (pseudo.length < 2) {
     return { error: "Choisis un pseudo (2 caractères minimum)." };
   }
-  if (!ecole) {
-    return { error: "Choisis ton école (ou « Exté »)." };
+  if (!/^[a-zA-Z0-9À-ɏ_-]+$/.test(pseudo)) {
+    return { error: "Le pseudo ne peut contenir que des lettres, chiffres, - et _." };
   }
-  if (!isAdult) {
-    return { error: "Tu dois confirmer avoir plus de 18 ans." };
+  if (!ecole) {
+    return { error: "Choisis ton école." };
   }
 
-  const isExternal = ecole === EXTERNAL_VALUE;
-  let schoolId: string | null = null;
+  const { data: school } = await supabase
+    .from("schools")
+    .select("slug")
+    .eq("id", ecole)
+    .single<{ slug: string }>();
+
+  const isExte = school?.slug === EXTE_SLUG;
   let anneeVal: string | null = null;
 
-  if (!isExternal) {
-    schoolId = ecole;
+  if (!isExte) {
     if (!ANNEE_VALUES.includes(annee)) {
       return { error: "Choisis ton année." };
     }
     anneeVal = annee;
   }
 
-  // Disponibilité du pseudo (insensible à la casse).
   const { data: taken } = await supabase
     .from("profiles")
     .select("id")
@@ -60,13 +62,7 @@ export async function completeProfile(
 
   const { error } = await supabase
     .from("profiles")
-    .update({
-      pseudo,
-      school_id: schoolId,
-      is_external: isExternal,
-      annee: anneeVal,
-      is_adult: true,
-    })
+    .update({ pseudo, school_id: ecole, annee: anneeVal })
     .eq("id", user.id);
 
   if (error) {

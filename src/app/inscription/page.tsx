@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { LogoutButton } from "@/components/logout-button";
 import { PageHeader } from "@/components/page-header";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -15,33 +16,39 @@ export default async function InscriptionPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
-
-  // Profil déjà complété ? → on file vers le profil.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("pseudo")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.pseudo) {
-    redirect("/profil");
+  // Déjà connecté avec un profil complet → profil
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("pseudo")
+      .eq("id", user.id)
+      .single();
+    if (profile?.pseudo) {
+      redirect("/profil");
+    }
   }
 
   const { data: schools } = await supabase
     .from("schools")
-    .select("id, name")
+    .select("id, name, slug")
     .order("name");
 
   return (
     <div className="mx-auto max-w-md">
       <PageHeader
-        title="Bienvenue 👋"
-        subtitle="Complète ton profil pour commencer à jouer."
+        title="Inscription"
+        subtitle="Crée ton compte pour rejoindre le classement et ne plus oublier tes parties !"
       />
-      <OnboardingForm schools={schools ?? []} selfId={user.id} />
+      <OnboardingForm
+        schools={schools ?? []}
+        selfId={user?.id ?? null}
+        isAuthenticated={!!user}
+      />
+      {user && (
+        <div className="mt-4 flex justify-center">
+          <LogoutButton />
+        </div>
+      )}
     </div>
   );
 }
