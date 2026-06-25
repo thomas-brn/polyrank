@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 export type Player = { name: string; profileId: string | null };
 
 const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
 
 type Suggestion = { id: string; pseudo: string };
 
@@ -89,11 +89,11 @@ export function PlayerCombobox({
               if (suggestions.length > 0) setOpen(true);
             }}
             placeholder="@pseudo ou nom"
-            className={`${inputClass} ${tagged ? "border-blue-400 pr-8" : ""}`}
+            className={`${inputClass} ${tagged ? "border-brand-400 pr-8" : ""}`}
           />
           {tagged ? (
             <AtSign
-              className="absolute top-1/2 right-2 size-4 -translate-y-1/2 text-blue-500"
+              className="absolute top-1/2 right-2 size-4 -translate-y-1/2 text-brand-500"
               aria-label="Joueur inscrit taggé"
             />
           ) : null}
@@ -123,7 +123,7 @@ export function PlayerCombobox({
                 }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
               >
-                <AtSign className="size-3.5 text-blue-500" />
+                <AtSign className="size-3.5 text-brand-500" />
                 {s.pseudo}
               </button>
             </li>

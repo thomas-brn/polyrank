@@ -12,7 +12,19 @@ const MAX_PER_SIDE = 4;
 const emptyPlayer = (): Player => ({ name: "", profileId: null });
 
 const inputClass =
-  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200";
+  "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
+
+const statInputClass =
+  "w-14 rounded border border-slate-300 px-1.5 py-1 text-center text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
+
+const FIFACHAMP_STATS = [
+  { key: "cartons_rouges", label: "Cartons rouges", required: true },
+  { key: "cartons_jaunes", label: "Cartons jaunes", required: true },
+  { key: "retournees", label: "Retournées", required: true },
+  { key: "coups_francs", label: "Coups francs directs", required: true },
+  { key: "sorties_blessure", label: "Sorties sur blessure", required: true },
+  { key: "fautes_sans_carton", label: "Fautes sans carton", required: false },
+] as const;
 
 export function NewMatchForm({
   games,
@@ -23,7 +35,6 @@ export function NewMatchForm({
   myPseudo: string;
   myId: string;
 }) {
-  const [gameId, setGameId] = useState("");
   const [mates, setMates] = useState<Player[]>([]);
   const [opps, setOpps] = useState<Player[]>([emptyPlayer()]);
   const [state, formAction, pending] = useActionState<NewMatchState, FormData>(
@@ -31,16 +42,15 @@ export function NewMatchForm({
     {},
   );
 
-  const game = games.find((g) => g.id === gameId);
+  const game = games[0];
   const hasScore = game?.has_score ?? false;
   const aTotal = 1 + mates.length;
 
   const hasTaggedOpp = opps.some((o) => o.profileId);
   const namesFilled =
     mates.every((m) => m.name.trim()) && opps.every((o) => o.name.trim());
-  const canSubmit = Boolean(gameId) && hasTaggedOpp && namesFilled;
+  const canSubmit = Boolean(game?.id) && hasTaggedOpp && namesFilled;
 
-  // Joueurs inscrits déjà présents (à exclure des suggestions, anti-doublon).
   const usedIds = [
     myId,
     ...mates.map((m) => m.profileId),
@@ -68,32 +78,7 @@ export function NewMatchForm({
         value={JSON.stringify({ mates, opps })}
       />
 
-      {/* Jeu */}
-      <fieldset>
-        <legend className="text-sm font-medium">Jeu</legend>
-        <div className="mt-2 flex gap-2">
-          {games.map((g) => (
-            <label
-              key={g.id}
-              className={`flex-1 cursor-pointer rounded-lg border px-3 py-2 text-center text-sm font-medium ${
-                gameId === g.id
-                  ? "border-blue-500 bg-blue-50 text-blue-700"
-                  : "border-slate-300 text-slate-600"
-              }`}
-            >
-              <input
-                type="radio"
-                name="game_id"
-                value={g.id}
-                checked={gameId === g.id}
-                onChange={() => setGameId(g.id)}
-                className="sr-only"
-              />
-              {g.name}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <input type="hidden" name="game_id" value={game?.id ?? ""} />
 
       {/* Joueurs : 2 colonnes alignées */}
       <div className="grid grid-cols-2 gap-3">
@@ -120,7 +105,7 @@ export function NewMatchForm({
             <button
               type="button"
               onClick={() => setMates((m) => [...m, emptyPlayer()])}
-              className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-blue-600 hover:underline"
+              className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-brand-600 hover:underline"
             >
               <Plus className="size-3.5" /> Ajouter
             </button>
@@ -145,7 +130,7 @@ export function NewMatchForm({
             <button
               type="button"
               onClick={() => setOpps((o) => [...o, emptyPlayer()])}
-              className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-blue-600 hover:underline"
+              className="flex items-center gap-1 self-start rounded-md px-1 py-1 text-xs font-medium text-brand-600 hover:underline"
             >
               <Plus className="size-3.5" /> Ajouter
             </button>
@@ -163,32 +148,73 @@ export function NewMatchForm({
       {/* Résultat */}
       <div>
         <p className="text-sm font-medium">Résultat</p>
-        {!gameId ? (
+        {!game?.id ? (
           <p className="mt-1 text-xs text-slate-400">
             Choisis d&apos;abord un jeu.
           </p>
         ) : hasScore ? (
-          <div className="mt-2 flex items-end gap-3">
-            <label className="flex-1 text-xs text-slate-500">
-              Ton camp
-              <input
-                name="score_a"
-                type="number"
-                min={0}
-                required
-                className={`${inputClass} mt-1`}
-              />
-            </label>
-            <label className="flex-1 text-xs text-slate-500">
-              Adverse
-              <input
-                name="score_b"
-                type="number"
-                min={0}
-                required
-                className={`${inputClass} mt-1`}
-              />
-            </label>
+          <div className="mt-2 overflow-hidden rounded-lg border border-slate-200">
+            <div className="grid grid-cols-[1fr_72px_72px] bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-500">
+              <span>Statistique</span>
+              <span className="text-center">Ton camp</span>
+              <span className="text-center">Adverse</span>
+            </div>
+            <div className="grid grid-cols-[1fr_72px_72px] items-center border-t border-slate-100 px-3 py-2">
+              <span className="text-sm font-medium text-slate-700">Buts</span>
+              <div className="flex justify-center">
+                <input
+                  name="score_a"
+                  type="number"
+                  min={0}
+                  required
+                  defaultValue={0}
+                  className={statInputClass}
+                />
+              </div>
+              <div className="flex justify-center">
+                <input
+                  name="score_b"
+                  type="number"
+                  min={0}
+                  required
+                  defaultValue={0}
+                  className={statInputClass}
+                />
+              </div>
+            </div>
+            {FIFACHAMP_STATS.map(({ key, label, required }) => (
+              <div
+                key={key}
+                className="grid grid-cols-[1fr_72px_72px] items-center border-t border-slate-100 px-3 py-2"
+              >
+                <span className="text-sm text-slate-700">
+                  {label}
+                  {!required && (
+                    <span className="ml-1 text-xs text-slate-400">(optionnel)</span>
+                  )}
+                </span>
+                <div className="flex justify-center">
+                  <input
+                    name={`stats_a_${key}`}
+                    type="number"
+                    min={0}
+                    required={required}
+                    defaultValue={0}
+                    className={statInputClass}
+                  />
+                </div>
+                <div className="flex justify-center">
+                  <input
+                    name={`stats_b_${key}`}
+                    type="number"
+                    min={0}
+                    required={required}
+                    defaultValue={0}
+                    className={statInputClass}
+                  />
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div className="mt-2 flex gap-2">
@@ -219,7 +245,7 @@ export function NewMatchForm({
       <button
         type="submit"
         disabled={pending || !canSubmit}
-        className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-60"
+        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
       >
         {pending ? "Enregistrement…" : "Enregistrer le match"}
       </button>

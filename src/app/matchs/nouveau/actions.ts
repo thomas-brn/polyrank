@@ -99,6 +99,11 @@ export async function createMatch(
 
   const format = `${1 + mates.length}V${opps.length}`;
 
+  const readStat = (prefix: string, key: string) => {
+    const val = Number(formData.get(`stats_${prefix}_${key}`));
+    return Number.isFinite(val) && val >= 0 ? Math.floor(val) : 0;
+  };
+
   let winner: "A" | "B" | "NUL";
   let scoreA: number | null = null;
   let scoreB: number | null = null;
@@ -114,13 +119,61 @@ export async function createMatch(
     ) {
       return { error: "Saisis un score valide." };
     }
-    winner = scoreA > scoreB ? "A" : scoreA < scoreB ? "B" : "NUL";
+    // FifaChamp: forfait à 5 cartons rouges, puis score = buts + cartons rouges
+    const crA = readStat("a", "cartons_rouges");
+    const crB = readStat("b", "cartons_rouges");
+    const forfaitA = crA >= 5;
+    const forfaitB = crB >= 5;
+    if (forfaitA && !forfaitB) {
+      winner = "B";
+    } else if (forfaitB && !forfaitA) {
+      winner = "A";
+    } else {
+      const totalA = scoreA + crA;
+      const totalB = scoreB + crB;
+      if (totalA !== totalB) {
+        winner = totalA > totalB ? "A" : "B";
+      } else if (crA !== crB) {
+        winner = crA > crB ? "A" : "B";
+      } else {
+        const cjA = readStat("a", "cartons_jaunes");
+        const cjB = readStat("b", "cartons_jaunes");
+        if (cjA !== cjB) {
+          winner = cjA > cjB ? "A" : "B";
+        } else {
+          const fscA = readStat("a", "fautes_sans_carton");
+          const fscB = readStat("b", "fautes_sans_carton");
+          winner = fscA > fscB ? "A" : fscA < fscB ? "B" : "NUL";
+        }
+      }
+    }
   } else {
     if (winnerInput !== "A" && winnerInput !== "B") {
       return { error: "Indique qui a gagné." };
     }
     winner = winnerInput;
   }
+
+  const stats = game.has_score
+    ? {
+        a: {
+          cartons_rouges: readStat("a", "cartons_rouges"),
+          cartons_jaunes: readStat("a", "cartons_jaunes"),
+          retournees: readStat("a", "retournees"),
+          coups_francs: readStat("a", "coups_francs"),
+          sorties_blessure: readStat("a", "sorties_blessure"),
+          fautes_sans_carton: readStat("a", "fautes_sans_carton"),
+        },
+        b: {
+          cartons_rouges: readStat("b", "cartons_rouges"),
+          cartons_jaunes: readStat("b", "cartons_jaunes"),
+          retournees: readStat("b", "retournees"),
+          coups_francs: readStat("b", "coups_francs"),
+          sorties_blessure: readStat("b", "sorties_blessure"),
+          fautes_sans_carton: readStat("b", "fautes_sans_carton"),
+        },
+      }
+    : null;
 
   const { data: match, error: matchErr } = await supabase
     .from("matches")
@@ -132,6 +185,7 @@ export async function createMatch(
       score_a: scoreA,
       score_b: scoreB,
       location,
+      stats,
     })
     .select("id")
     .single<{ id: string }>();

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 
 import { ComingSoon, PageHeader } from "@/components/page-header";
+import { PageHero } from "@/components/page-hero";
+import { getMode, MODES } from "@/lib/mode";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { NewMatchForm } from "./new-match-form";
@@ -34,17 +36,21 @@ export default async function NouveauMatchPage() {
     redirect("/inscription");
   }
 
+  // Le match est saisi pour le sport actif : on ne propose que ce jeu.
+  const mode = await getMode();
+  const sport = MODES[mode].sport;
   const { data: games } = await supabase
     .from("games")
     .select("id, name, has_score")
     .eq("is_active", true)
+    .eq("slug", mode)
     .order("name");
 
   return (
-    <div>
-      <PageHeader
-        title="Saisir un match"
-        subtitle="Résultat rapide. La validation par l'adversaire viendra ensuite."
+    <div className="flex flex-col gap-6">
+      <PageHero
+        title={`Saisir un match ${sport}`}
+        description="Résultat rapide. La validation par l'adversaire viendra ensuite."
       />
       <NewMatchForm games={games ?? []} myPseudo={profile.pseudo} myId={user.id} />
     </div>
