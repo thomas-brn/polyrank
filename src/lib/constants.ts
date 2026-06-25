@@ -15,8 +15,5 @@ export const ANNEE_LABELS: Record<string, string> = Object.fromEntries(
   ANNEES.map((a) => [a.value, a.label]),
 );
 
-/** Valeur du select « école » pour un joueur extérieur au réseau Polytech. */
-export const EXTERNAL_VALUE = "EXTE";
-
-export const ALCOHOL_NOTICE =
-  "L'abus d'alcool est dangereux pour la santé, à consommer avec modération.";
+/** Slug de l'école « Exté » dans la table schools. */
+export const EXTE_SLUG = "exte";
