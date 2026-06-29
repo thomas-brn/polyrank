@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ModeToggle } from "@/components/mode-toggle";
+import { PlayerSearch } from "@/components/player-search";
 import { RulesOverlay } from "@/components/rules-overlay";
 import { getMode, MODES } from "@/lib/mode";
 
@@ -22,6 +23,8 @@ export default async function HomePage() {
         </div>
         <ModeToggle current={mode} />
       </section>
+
+      <PlayerSearch />
 
       <section className="grid gap-4 sm:grid-cols-2">
         <Link

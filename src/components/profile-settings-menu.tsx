@@ -28,10 +28,8 @@ function GearIcon({ className }: { className?: string }) {
 }
 
 export function ProfileSettingsMenu({
-  userId,
   variant,
 }: {
-  userId: string;
   variant: "icon" | "wide";
 }) {
   const [open, setOpen] = useState(false);
@@ -81,13 +79,6 @@ export function ProfileSettingsMenu({
             className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
           >
             Modifier mon profil
-          </Link>
-          <Link
-            href={`/joueurs/${userId}`}
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            Mon profil public
           </Link>
           <div className="my-1 border-t border-slate-100" />
           <button

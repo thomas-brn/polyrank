@@ -57,8 +57,8 @@ export function SideNav({ pendingCount = 0 }: NavProps) {
               href={href}
               className={`relative flex h-14 w-14 items-center justify-center rounded-2xl transition-all duration-200 active:scale-95 group-hover:scale-105 group-hover/btn:!scale-[1.15] ${
                 active
-                  ? "bg-brand-50 text-brand-600 shadow-md shadow-slate-200"
-                  : "bg-slate-100 text-slate-600 shadow-sm hover:bg-slate-200 hover:text-slate-900"
+                  ? "bg-brand-600 text-white shadow-lg shadow-brand-200"
+                  : "bg-slate-100 text-slate-400 shadow-sm hover:bg-slate-200 hover:text-slate-700"
               }`}
             >
               <Icon className="size-6" aria-hidden />

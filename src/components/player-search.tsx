@@ -6,7 +6,7 @@ import { Search } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 
-type Result = { id: string; pseudo: string };
+type Result = { id: string; pseudo: string; schools: { name: string } | null };
 
 export function PlayerSearch() {
   const router = useRouter();
@@ -29,12 +29,12 @@ export function PlayerSearch() {
       const supabase = createClient();
       const { data } = await supabase
         .from("profiles")
-        .select("id, pseudo")
+        .select("id, pseudo, schools(name)")
         .ilike("pseudo", `%${q}%`)
         .not("pseudo", "is", null)
         .limit(8);
       if (!active) return;
-      setResults((data ?? []) as Result[]);
+      setResults((data ?? []) as unknown as Result[]);
       setOpen((data ?? []).length > 0);
     }, 200);
     return () => {
@@ -76,7 +76,10 @@ export function PlayerSearch() {
                 onClick={() => router.push(`/joueurs/${r.id}`)}
                 className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
               >
-                {r.pseudo}
+                <span className="font-medium">{r.pseudo}</span>
+                {r.schools?.name ? (
+                  <span className="ml-1 text-slate-400">- {r.schools.name}</span>
+                ) : null}
               </button>
             </li>
           ))}
