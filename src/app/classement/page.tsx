@@ -52,6 +52,7 @@ type Row = {
 
 type VilleRow = {
   ville: string;
+  color: string | null;
   eloGlobal: number;
   elo1v1: number;
   elo2v2: number;
@@ -98,10 +99,16 @@ export default async function ClassementPage({
 
   const [{ data: game }, { data: schoolsData }] = await Promise.all([
     supabase.from("games").select("id").eq("slug", mode).single<{ id: string }>(),
-    supabase.from("schools").select("id, name, slug").order("name"),
+    supabase.from("schools").select("id, name, slug, color").order("name"),
   ]);
 
-  const schools = (schoolsData ?? []) as { id: string; name: string; slug: string }[];
+  const schools = (schoolsData ?? []) as {
+    id: string;
+    name: string;
+    slug: string;
+    color: string | null;
+  }[];
+  const schoolColorByName = new Map(schools.map((s) => [s.name, s.color]));
 
   // Résout le school_id à partir du slug si filtrage actif
   let filterSchoolId: string | null = null;
@@ -188,7 +195,14 @@ export default async function ClassementPage({
           const elo2v2 = sumTop5(v2);
           const eloPondere =
             WEIGHTS.global * eloGlobal + WEIGHTS.v1 * elo1v1 + WEIGHTS.v2 * elo2v2;
-          return { ville, eloGlobal, elo1v1, elo2v2, eloPondere };
+          return {
+            ville,
+            color: schoolColorByName.get(ville) ?? null,
+            eloGlobal,
+            elo1v1,
+            elo2v2,
+            eloPondere,
+          };
         })
         .sort((a, b) => b.eloPondere - a.eloPondere || a.ville.localeCompare(b.ville));
     } else if (scope === "2V2") {
@@ -342,21 +356,28 @@ export default async function ClassementPage({
               <li key={v.ville}>
                 <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
                   <span
-                    className={`w-7 shrink-0 text-center text-sm font-bold ${
-                      i < 3 ? "text-base" : "text-slate-400"
+                    className={`w-7 shrink-0 text-center text-sm ${
+                      i < 3 ? "text-base" : "font-bold text-slate-400"
                     }`}
                   >
                     {rankBadge(i + 1)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-slate-800">{v.ville}</p>
-                    <p className="text-[11px] text-slate-400">
-                      Global {Math.round(v.eloGlobal)}
-                      {v.elo1v1 > 0 ? ` · 1v1 ${Math.round(v.elo1v1)}` : ""}
-                      {v.elo2v2 > 0 ? ` · Duos ${Math.round(v.elo2v2)}` : ""}
-                    </p>
+                    <div className="flex flex-col gap-0 sm:flex-row sm:items-baseline sm:gap-2">
+                      <p
+                        className="text-sm font-semibold"
+                        style={{ color: v.color ?? "#1e293b" }}
+                      >
+                        {v.ville}
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Global {Math.round(v.eloGlobal)}
+                        {v.elo1v1 > 0 ? ` • 1v1 ${Math.round(v.elo1v1)}` : ""}
+                        {v.elo2v2 > 0 ? ` • 2v2 ${Math.round(v.elo2v2)}` : ""}
+                      </p>
+                    </div>
                   </div>
-                  <span className="shrink-0 text-right text-base font-bold tabular-nums text-brand-700">
+                  <span className="shrink-0 pr-1.5 text-right text-base font-bold tabular-nums text-brand-700">
                     {Math.round(v.eloPondere)}
                   </span>
                 </div>
@@ -379,47 +400,49 @@ export default async function ClassementPage({
                 <li key={row.key}>
                   <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
                     <span
-                      className={`w-7 shrink-0 text-center text-sm font-bold ${
-                        row.rank <= 3 ? "text-base" : "text-slate-400"
+                      className={`w-7 shrink-0 text-center text-sm ${
+                        row.rank <= 3 ? "text-base" : "font-bold text-slate-400"
                       }`}
                     >
                       {rankBadge(row.rank)}
                     </span>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                        {row.players.map((p, idx) => (
-                          <span key={p.id ?? idx} className="flex items-center gap-1.5">
-                            {idx > 0 && <span className="text-slate-300">&</span>}
-                            {p.id ? (
-                              <Link
-                                href={`/joueurs/${p.id}`}
-                                className="text-sm font-semibold hover:underline"
-                                style={{ color: p.color ?? "#1e293b" }}
-                              >
-                                {p.name}
-                              </Link>
-                            ) : (
-                              <span
-                                className="text-sm font-semibold"
-                                style={{ color: p.color ?? "#1e293b" }}
-                              >
-                                {p.name}
-                              </span>
-                            )}
-                          </span>
-                        ))}
+                      <div className="flex flex-col gap-0 sm:flex-row sm:items-baseline sm:gap-2">
+                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          {row.players.map((p, idx) => (
+                            <span key={p.id ?? idx} className="flex items-center gap-1.5">
+                              {idx > 0 && <span className="text-slate-300">&</span>}
+                              {p.id ? (
+                                <Link
+                                  href={`/joueurs/${p.id}`}
+                                  className="text-sm font-semibold hover:underline"
+                                  style={{ color: p.color ?? "#1e293b" }}
+                                >
+                                  {p.name}
+                                </Link>
+                              ) : (
+                                <span
+                                  className="text-sm font-semibold"
+                                  style={{ color: p.color ?? "#1e293b" }}
+                                >
+                                  {p.name}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-[11px] text-slate-400">
+                          {row.school ? `${row.school} • ` : ""}
+                          {row.won}/{row.lost}
+                          {row.played > 0
+                            ? ` • ${Math.round((row.won / row.played) * 100)}%`
+                            : ""}
+                        </p>
                       </div>
-                      <p className="text-[11px] text-slate-400">
-                        {row.school ? `${row.school} · ` : ""}
-                        {row.won}V-{row.lost}D
-                        {row.played > 0
-                          ? ` · ${Math.round((row.won / row.played) * 100)}%`
-                          : ""}
-                      </p>
                     </div>
 
-                    <span className="shrink-0 text-right text-base font-bold tabular-nums text-brand-700">
+                    <span className="shrink-0 pr-1.5 text-right text-base font-bold tabular-nums text-brand-700">
                       {Math.round(row.rating)}
                     </span>
                   </div>
