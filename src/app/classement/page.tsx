@@ -36,6 +36,7 @@ type ProfileLite = {
   annee: string | null;
   school_slug: string | null;
   school_name: string | null;
+  school_color: string | null;
 };
 
 type Row = {
@@ -45,7 +46,7 @@ type Row = {
   played: number;
   won: number;
   lost: number;
-  players: { id: string | null; name: string }[];
+  players: { id: string | null; name: string; color: string | null }[];
   school: string | null;
 };
 
@@ -240,8 +241,8 @@ export default async function ClassementPage({
           won: d.won,
           lost: d.lost,
           players: [
-            { id: d.profile_lo, name: lo?.pseudo ?? "?" },
-            { id: d.profile_hi, name: hi?.pseudo ?? "?" },
+            { id: d.profile_lo, name: lo?.pseudo ?? "?", color: lo?.school_color ?? null },
+            { id: d.profile_hi, name: hi?.pseudo ?? "?", color: hi?.school_color ?? null },
           ],
           school: null,
         };
@@ -287,7 +288,7 @@ export default async function ClassementPage({
             played: r.played,
             won: r.won,
             lost: r.lost,
-            players: [{ id: r.profile_id, name: p?.pseudo ?? "?" }],
+            players: [{ id: r.profile_id, name: p?.pseudo ?? "?", color: p?.school_color ?? null }],
             school: p?.school_name ?? null,
           };
         });
@@ -393,12 +394,16 @@ export default async function ClassementPage({
                             {p.id ? (
                               <Link
                                 href={`/joueurs/${p.id}`}
-                                className="text-sm font-semibold text-slate-800 hover:underline"
+                                className="text-sm font-semibold hover:underline"
+                                style={{ color: p.color ?? "#1e293b" }}
                               >
                                 {p.name}
                               </Link>
                             ) : (
-                              <span className="text-sm font-semibold text-slate-800">
+                              <span
+                                className="text-sm font-semibold"
+                                style={{ color: p.color ?? "#1e293b" }}
+                              >
                                 {p.name}
                               </span>
                             )}
@@ -446,10 +451,10 @@ async function fetchProfiles(
   if (ids.length === 0) return new Map();
   const { data } = await supabase
     .from("profiles")
-    .select("id, pseudo, annee, schools(name, slug)")
+    .select("id, pseudo, annee, schools(name, slug, color)")
     .in("id", ids)
     .returns<
-      { id: string; pseudo: string | null; annee: string | null; schools: { name: string; slug: string } | null }[]
+      { id: string; pseudo: string | null; annee: string | null; schools: { name: string; slug: string; color: string | null } | null }[]
     >();
   return new Map(
     (data ?? []).map((p) => [
@@ -460,6 +465,7 @@ async function fetchProfiles(
         annee: p.annee,
         school_slug: p.schools?.slug ?? null,
         school_name: p.schools?.name ?? null,
+        school_color: p.schools?.color ?? null,
       },
     ]),
   );
