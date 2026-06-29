@@ -1,8 +1,6 @@
 # PolyRank — Décisions projet
 
 > **Domaine** — PolyRank classe des **jeux (à boire)** entre étudiants, pas des sports physiques. Au lancement : **FifaChamp** et **CoinCoin**.
->
-> ⚠️ **Jeux d'alcool — réservés aux +18 ans.** L'inscription exige une confirmation de majorité et affiche un message de prévention : « L'abus d'alcool est dangereux pour la santé, à consommer avec modération ».
 
 ## Phase 1 — Cadrage & architecture
 

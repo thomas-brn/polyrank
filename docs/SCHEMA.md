@@ -7,13 +7,14 @@ Source de vérité : `supabase/migrations/` (appliquer dans l'ordre numérique).
 ## Tables
 
 ### `schools`
-Référentiel des écoles. Inclut "Exté" (slug `exte`) — l'école de rattachement des joueurs externes au réseau. Prévu pour accueillir une colonne `color` (couleur par école).
+Référentiel des écoles. Inclut "Exté" (slug `exte`) — l'école de rattachement des joueurs externes au réseau.
 
 | Colonne | Type | Notes |
 |---|---|---|
 | `id` | uuid PK | |
 | `name` | text unique | Ex. `"Grenoble"`, `"Angers"` (sans préfixe — migration 0008) |
 | `slug` | text unique | Ex. `"grenoble"` — utilisé dans les URLs |
+| `color` | text | Couleur Pantone officielle en hex (ex. `"#009CB4"`). Null si non définie |
 | `created_at` | timestamptz | |
 
 ---
@@ -80,22 +81,26 @@ Seeds : `FifaChamp` (has_score=true), `CoinCoin` (has_score=false).
 | `winner_side` | text | `A`, `B`, ou `NUL` |
 | `score_a` / `score_b` | int | Score chiffré, `null` pour les jeux sans score |
 | `stats` | jsonb | Infos additionnelles extensibles |
-| `proposed_changes` | jsonb | Correction proposée par l'adversaire (CONTESTE) ou demande de suppression (`{"action":"DELETE","reason":...}` en EN_APPEL). `null` hors litige |
+| `proposed_changes` | jsonb | En CONTESTE : correction proposée (`winner_side`, `score_a`/`score_b`, `stats` — voir `accept_contest`). En EN_APPEL (suppression) : `{"action":"DELETE","reason":...}`. `null` hors litige |
 | `side_a_label` / `side_b_label` | text | Libellé libre par camp |
 | `created_at` / `updated_at` | timestamptz | `updated_at` mis à jour automatiquement par trigger |
 
 **Cycle de vie du statut (validation automatique) :**
 ```
-VALIDE (auto à la création)            → Elo appliqué immédiatement
+VALIDE (défaut à la création)          → Elo appliqué immédiatement (recompute_ratings)
   ├─ créateur modifie son match        → reste VALIDE (Elo recalculé)
-  ├─ adversaire conteste → CONTESTE    → correction proposée stockée dans proposed_changes
-  │     ├─ créateur accepte            → applique la correction (Elo recalculé)
-  │     └─ créateur refuse → EN_APPEL  → admin arbitre (supprime ou rétablit)
-  └─ adversaire demande la suppression → EN_APPEL  → admin tranche (supprime ou rétablit)
-        (motif stocké dans proposed_changes.reason)
+  ├─ adversaire conteste → CONTESTE    → correction proposée dans proposed_changes (Elo inchangé)
+  │     ├─ créateur accepte            → applique proposed_changes, repasse VALIDE (Elo recalculé)
+  │     └─ créateur refuse             → match supprimé (Elo recalculé)
+  └─ adversaire demande la suppression → EN_APPEL (Elo inchangé)
+        (proposed_changes = {"action":"DELETE","reason":...})
+        ├─ admin approuve              → match supprimé (Elo recalculé)
+        └─ admin rejette               → repasse VALIDE, proposed_changes vidé (Elo inchangé)
 ```
 Seul un joueur tagué côté **adverse** peut contester ou demander la suppression.
-L'Elo ne change que si le match est modifié ou supprimé. Voir `docs/ELO.md` et `docs/DECISIONS.md`.
+L'Elo ne change que si le match est modifié ou supprimé. Une contestation ou une demande de suppression, à elle seule, ne déclenche pas de recalcul.
+`recompute_ratings()` rejeue **tous** les matchs restants (tous statuts) : un match CONTESTE ou EN_APPEL continue de compter pour l'Elo tant qu'il n'est pas corrigé ou supprimé.
+Voir `docs/ELO.md` et `docs/DECISIONS.md`.
 
 ---
 
@@ -175,6 +180,27 @@ Série temporelle des notes Elo après chaque match, par joueur et par périmèt
 
 Index : `(game_id, profile_id, scope, played_at)`.
 
+Utilisée par l'app pour les courbes Elo individuelles (`GLOBAL`, `1V1`) sur `/profil`, `/joueurs/[id]`, et les deltas Elo sur `/matchs/[id]`.
+
+---
+
+### `duo_rating_history`
+Série temporelle des notes Elo duo après chaque match strict 2v2. Alimente les courbes 2v2 du profil et les deltas Elo duo sur le détail d'un match. Écrite uniquement par `recompute_ratings()` (entièrement reconstruite à chaque appel). Migration `0014`.
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `id` | bigint PK | generated always as identity |
+| `game_id` | uuid | FK → `games` (cascade delete) |
+| `profile_lo` / `profile_hi` | uuid | FK → `profiles`, paire triée (`profile_lo < profile_hi`, cascade delete) |
+| `match_id` | uuid | FK → `matches` (set null on delete) — match source |
+| `rating` | numeric(8,2) | Note du duo après ce match |
+| `played_at` | timestamptz | Date du match (axe X de la courbe) |
+| `created_at` | timestamptz | |
+
+Index : `(game_id, profile_lo, profile_hi, played_at)`.
+
+Utilisée par l'app sur `/profil` (onglet 2v2) et `/matchs/[id]` (delta Elo duo par camp).
+
 ---
 
 ## Fonctions & triggers
@@ -183,14 +209,26 @@ Index : `(game_id, profile_id, scope, played_at)`.
 |---|---|---|
 | `handle_new_user()` | trigger (after insert on `auth.users`) | Crée automatiquement un `profiles` vide au signup |
 | `set_updated_at()` | trigger (before update on `matches`) | Met à jour `matches.updated_at` |
-| `recompute_ratings()` | RPC (security definer) | Recalcule toutes les notes (`player_ratings`, `duo_ratings`, `rating_history`) par rejeu chronologique (Elo K=40, départ 1000). Appelée par l'app après création / modification / suppression d'un match. Voir `docs/ELO.md` |
-| `contest_match(match_id, proposed)` | RPC (security definer) | Adversaire tagué conteste un match VALIDE → CONTESTE, stocke la correction proposée |
-| `accept_contest(match_id)` | RPC (security definer) | Créateur (ou admin) accepte la correction → applique `proposed_changes`, repasse en VALIDE |
-| `refuse_contest(match_id)` | RPC (security definer) | Créateur (ou admin) refuse la contestation → EN_APPEL |
-| `request_deletion(match_id, reason)` | RPC (security definer) | Adversaire tagué demande la suppression d'un match VALIDE → EN_APPEL, motif stocké |
-| `approve_deletion(match_id)` | RPC (security definer, admin) | Admin approuve → supprime le match (cascade) |
-| `reject_deletion(match_id)` | RPC (security definer, admin) | Admin rejette la demande/l'appel → rétablit le match en VALIDE |
+| `recompute_ratings()` | RPC (security definer) | Recalcule toutes les notes (`player_ratings`, `duo_ratings`, `rating_history`, `duo_rating_history`) par rejeu chronologique de tous les matchs (Elo K=40, départ 1000). Idempotent. Voir `docs/ELO.md` |
+| `contest_match(p_match_id, p_proposed)` | RPC (security definer) | Adversaire tagué conteste un match VALIDE → CONTESTE, stocke `p_proposed` dans `proposed_changes`, insère un `match_events` CONTESTATION. **Pas** de recalcul Elo |
+| `accept_contest(p_match_id)` | RPC (security definer) | Créateur (ou admin) accepte → applique `proposed_changes` (`winner_side`, `score_a`, `score_b`, `stats`), repasse en VALIDE. L'app appelle ensuite `recompute_ratings()` |
+| `refuse_contest(p_match_id)` | RPC (security definer) | Créateur (ou admin) refuse → **supprime** le match (cascade). L'app appelle ensuite `recompute_ratings()` (migration `0017`) |
+| `request_deletion(p_match_id, p_reason)` | RPC (security definer) | Adversaire tagué demande la suppression d'un match VALIDE → EN_APPEL, `proposed_changes = {"action":"DELETE","reason":...}`. **Pas** de recalcul Elo |
+| `approve_deletion(p_match_id)` | RPC (security definer, admin) | Admin approuve → supprime le match. L'app appelle ensuite `recompute_ratings()` |
+| `reject_deletion(p_match_id)` | RPC (security definer, admin) | Admin rejette → rétablit le match en VALIDE, vide `proposed_changes`. **Pas** de recalcul Elo |
 | `is_admin()` | fonction stable (security definer) | Utilisée dans les policies RLS |
+
+> **RPC supprimée** : `validate_match()` (validation manuelle par l'adversaire) — retirée en migration `0012`.
+
+### Appels `recompute_ratings()` depuis l'app
+
+| Action | Fichier |
+|---|---|
+| Création d'un match | `src/app/matchs/nouveau/actions.ts` |
+| Modification / suppression par le créateur | `src/app/matchs/[id]/modifier/actions.ts` |
+| Acceptation d'une contestation | `src/app/matchs/[id]/actions.ts` |
+| Refus d'une contestation (match supprimé) | `src/app/matchs/[id]/actions.ts` |
+| Approbation admin d'une suppression | `src/app/matchs/[id]/actions.ts` |
 
 ---
 
@@ -208,5 +246,6 @@ Index : `(game_id, profile_id, scope, played_at)`.
 | `player_ratings` | publique | aucune (écrites par `recompute_ratings()`, security definer) |
 | `duo_ratings` | publique | aucune (écrites par `recompute_ratings()`, security definer) |
 | `rating_history` | publique | aucune (écrite par `recompute_ratings()`, security definer) |
+| `duo_rating_history` | publique | aucune (écrite par `recompute_ratings()`, security definer) |
 
 > Note : la RLS agit au niveau ligne. Pour masquer une colonne précise (`profiles.email`) on utilise les privilèges au niveau colonne (`GRANT SELECT (cols)`), pas une policy.

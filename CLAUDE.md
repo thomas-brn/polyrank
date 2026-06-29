@@ -10,8 +10,6 @@ Never add a `Co-Authored-By: Claude` trailer to commit messages.
 
 **PolyRank**, a web app for engineering school students to submit match results and view leaderboards, organized by sport and by cohort (promo/classe). Future domain: **polyrank.fr**.
 
-Phase 1 (cadrage & architecture) is complete and the app is scaffolded. Most features are still placeholder pages, built out in later phases.
-
 ## Tech stack
 
 - **Next.js 16** (App Router, TypeScript) + **React 19**
@@ -44,8 +42,13 @@ npm run lint
 - `src/components/` — shared UI (`site-nav` = responsive top/bottom nav, `page-header`).
 - `src/lib/supabase/` — `client.ts` (browser), `server.ts` (RSC/actions), `middleware.ts` (`updateSession` helper used by `proxy.ts`), `config.ts` (`isSupabaseConfigured` guard).
 - `supabase/migrations/` — versioned SQL schema (apply via Supabase SQL editor or `supabase db push`).
-- `docs/SCHEMA.md` — **current DB schema reference** (tables, columns, relations, RLS, functions). Read this before touching the database or writing queries.
+- `docs/SCHEMA.md` — **current DB schema reference** (tables, columns, relations, RLS, functions). See [Database schema](#database-schema) below.
 - `docs/` — `DECISIONS.md` (architecture decisions), `plan.md` / `plan.html` (project plan).
+
+### Database schema
+
+- **Before touching the DB** (writing queries, planning a migration): read `docs/SCHEMA.md` — do **not** re-read all files in `supabase/migrations/` (high token cost; `SCHEMA.md` is the consolidated reference).
+- **After adding or changing a migration**: check whether `docs/SCHEMA.md` must be updated to stay in sync with the new schema.
 
 ## Architecture decisions (see docs/DECISIONS.md)
 
