@@ -40,7 +40,7 @@ export function EloOverlay({ mode }: { mode: Mode }) {
         className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/30"
       >
         <Info className="h-3.5 w-3.5" />
-        Comment fonctionne le classement ?
+        Comment fonctionnent les classements ?
       </button>
 
       {open && (
@@ -58,7 +58,7 @@ export function EloOverlay({ mode }: { mode: Mode }) {
           >
             {/* Header */}
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
-              <h2 className="font-semibold text-slate-900">Comment fonctionne l&apos;Elo ?</h2>
+              <h2 className="font-semibold text-slate-900">Comment fonctionnent les classements ?</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"

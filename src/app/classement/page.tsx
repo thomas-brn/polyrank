@@ -90,7 +90,7 @@ export default async function ClassementPage({
   if (!isSupabaseConfigured) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHero title={`Classement ${sport}`} description="Le top des joueurs." />
+        <PageHero title={`Classement ${sport}`} description="Différents classements, différents modes de jeu" />
         <ComingSoon>Authentification non configurée (voir le README).</ComingSoon>
       </div>
     );
@@ -314,7 +314,7 @@ export default async function ClassementPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <PageHero title={`Classement ${sport}`} description={`Le top des joueurs ${sport}.`}>
+        <PageHero title={`Classement ${sport}`} description="Différents classements, différents modes de jeu">
           <EloOverlay mode={mode} />
         </PageHero>
 
