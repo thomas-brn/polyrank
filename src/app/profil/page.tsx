@@ -216,7 +216,7 @@ export default async function ProfilPage({
         <details className="group flex flex-col gap-3">
           <div className="order-1 flex flex-col gap-3">
             <Suspense key={statsKey} fallback={<DetailedStatsSpinner />}>
-              <DetailedStats userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} />
+              <DetailedStats userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} duoPartnerId={duoPartnerId} />
             </Suspense>
           </div>
           <summary className="order-2 flex cursor-pointer list-none items-center justify-center gap-1 text-[13px] font-medium text-slate-400 hover:text-slate-600 select-none">
@@ -285,7 +285,7 @@ async function EloSection({
     const rank = await rankOf(supabase, game.id, "GLOBAL", eloGlobal.rating);
     return (
       <div className="mt-6">
-        <EloCard title={`Classement ${sport}`} sub="général" rating={eloGlobal.rating} rank={rank} />
+        <EloCard title={`Elo Global`} rating={eloGlobal.rating} rank={rank} />
       </div>
     );
   }
@@ -304,7 +304,7 @@ async function EloSection({
     const rank = await rankOf(supabase, game.id, "1V1", elo1v1.rating);
     return (
       <div className="mt-6">
-        <EloCard title={`Classement ${sport} 1v1`} sub="général" rating={elo1v1.rating} rank={rank} />
+        <EloCard title={`Elo 1v1`} rating={elo1v1.rating} rank={rank} />
       </div>
     );
   }
@@ -350,7 +350,7 @@ async function EloSection({
 
   return (
     <div className="mt-6">
-      <EloCard title={`Classement ${sport} 2v2`} sub={`avec ${selectedDuo.partnerName}`} rating={selectedDuo.rating} rank={rankDuo} />
+      <EloCard title={`Elo 2v2`} sub={`avec ${selectedDuo.partnerName}`} rating={selectedDuo.rating} rank={rankDuo} />
     </div>
   );
 }
@@ -401,12 +401,9 @@ async function DuoSelectSection({
 
 function EloSkeleton() {
   return (
-    <div className="mt-6 flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <div className="flex flex-1 flex-col gap-1.5">
-        <div className="h-3 w-36 animate-pulse rounded bg-slate-100" />
-        <div className="h-2 w-16 animate-pulse rounded bg-slate-100" />
-      </div>
-      <div className="h-6 w-10 animate-pulse rounded bg-slate-100" />
+    <div className="mt-6 flex flex-col items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-5">
+      <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+      <div className="h-10 w-16 animate-pulse rounded bg-slate-100" />
       <div className="h-3 w-8 animate-pulse rounded bg-slate-100" />
     </div>
   );
@@ -598,12 +595,14 @@ async function DetailedStats({
   mode,
   matchFormat,
   duoMatchIds,
+  duoPartnerId,
 }: {
   userId: string;
   period: Period;
   mode: Mode;
   matchFormat: MatchFormat;
   duoMatchIds: string[] | null;
+  duoPartnerId?: string;
 }) {
   const supabase = await createClient();
   const dateFrom = getDateFrom(period);
@@ -708,7 +707,7 @@ async function DetailedStats({
         opponentCounts.set(label, (opponentCounts.get(label) ?? 0) + 1);
       }
       if (oppSide.length === 2) {
-        const key = oppSide.map((p) => p.profiles?.pseudo ?? p.guest_name ?? "?").sort().join(" / ");
+        const key = oppSide.map((p) => p.profiles?.pseudo ?? p.guest_name ?? "?").sort().join(" & ");
         opponentDuoCounts.set(key, (opponentDuoCounts.get(key) ?? 0) + 1);
       }
     }
@@ -742,7 +741,7 @@ async function DetailedStats({
     else v1History = hist ?? [];
   }
 
-  if (matchFormat === "2v2") {
+  if (matchFormat === "2v2" && duoPartnerId) {
     let dhq = supabase
       .from("duo_rating_history")
       .select("profile_lo, profile_hi, rating, played_at")
@@ -752,38 +751,29 @@ async function DetailedStats({
     if (dateFrom) dhq = dhq.gte("played_at", dateFrom);
     const { data: duoHist } = await dhq.returns<DuoHistoryRow[]>();
 
-    const duoMap = new Map<string, { partnerId: string; points: { rating: number; played_at: string }[] }>();
-    for (const row of duoHist ?? []) {
-      const key = `${row.profile_lo}:${row.profile_hi}`;
-      const partnerId = row.profile_lo === userId ? row.profile_hi : row.profile_lo;
-      if (!duoMap.has(key)) duoMap.set(key, { partnerId, points: [] });
-      duoMap.get(key)!.points.push({ rating: row.rating, played_at: row.played_at });
-    }
+    const points = (duoHist ?? [])
+      .filter((row) => row.profile_lo === duoPartnerId || row.profile_hi === duoPartnerId)
+      .map((row) => ({ rating: row.rating, played_at: row.played_at }));
 
-    const partnerIds = [...new Set([...duoMap.values()].map((d) => d.partnerId))];
-    let partnerNames: Record<string, string> = {};
-    if (partnerIds.length > 0) {
-      const { data: partners } = await supabase
+    if (points.length >= 2) {
+      const { data: partnerProfile } = await supabase
         .from("profiles")
-        .select("id, pseudo")
-        .in("id", partnerIds)
-        .returns<{ id: string; pseudo: string | null }[]>();
-      for (const p of partners ?? []) partnerNames[p.id] = p.pseudo ?? "?";
+        .select("pseudo")
+        .eq("id", duoPartnerId)
+        .single<{ pseudo: string | null }>();
+      duoSeries.push({
+        partnerName: partnerProfile?.pseudo ?? "?",
+        partnerId: duoPartnerId,
+        points,
+      });
     }
-
-    for (const { partnerId, points } of duoMap.values()) {
-      if (points.length < 2) continue;
-      duoSeries.push({ partnerName: partnerNames[partnerId] ?? "?", partnerId, points });
-    }
-    duoSeries.sort(
-      (a, b) => (b.points[b.points.length - 1]?.rating ?? 0) - (a.points[a.points.length - 1]?.rating ?? 0),
-    );
   }
 
   const hasChart =
     globalHistory.length >= 2 || v1History.length >= 2 || duoSeries.length > 0;
+  const showEmptyDuoChart = matchFormat === "2v2" && !duoPartnerId;
 
-  if (!hasFifaStats && !hasChart && !topOpponent) return null;
+  if (!hasFifaStats && !hasChart && !topOpponent && !showEmptyDuoChart) return null;
 
   return (
     <>
@@ -810,7 +800,16 @@ async function DetailedStats({
           </div>
         </div>
       ) : null}
-      {hasChart ? (
+      {showEmptyDuoChart ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            Évolution Elo
+          </p>
+          <div className="flex h-[110px] items-center justify-center">
+            <p className="text-sm text-slate-400">Sélectionne un duo pour voir l'évolution</p>
+          </div>
+        </div>
+      ) : hasChart ? (
         <div className="rounded-xl border border-slate-200 bg-white p-3">
           <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             Évolution Elo
@@ -830,15 +829,13 @@ async function DetailedStats({
 
 function EloCard({ title, sub, rating, rank }: { title: string; sub?: string; rating?: number; rank: number | null }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium leading-tight text-slate-700">{title}</p>
-        {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
-      </div>
-      <p className="shrink-0 text-xl font-bold text-brand-700">
+    <div className="flex flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-5 text-center">
+      <p className="text-sm font-medium leading-tight text-slate-700">{title}</p>
+      {sub && <p className="mt-0.5 text-xs text-slate-400">{sub}</p>}
+      <p className="mt-2 text-4xl font-bold tabular-nums text-brand-700">
         {rating != null ? Math.round(rating) : "—"}
       </p>
-      <p className="w-10 shrink-0 text-right text-sm font-medium text-slate-400">
+      <p className="mt-1 text-sm font-medium text-slate-400">
         {rank != null ? `#${rank}` : "—"}
       </p>
     </div>

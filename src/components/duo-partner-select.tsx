@@ -22,13 +22,13 @@ export function DuoPartnerSelect({
   }
 
   return (
-    <div className="relative mt-3">
+    <div className="relative flex border-b border-slate-200">
       <select
         value={selectedPartnerId ?? ""}
         onChange={handleChange}
-        className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 pr-9 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+        className="w-full appearance-none bg-transparent py-2.5 pr-6 text-center text-sm font-semibold text-brand-600 focus:outline-none"
       >
-        <option value="">Général (tous mes 2v2)</option>
+        <option value="">Tous mes duos</option>
         {partners.map((p) => (
           <option key={p.id} value={p.id}>
             Avec {p.pseudo}
@@ -37,7 +37,7 @@ export function DuoPartnerSelect({
       </select>
       <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
         <svg
-          className="size-4 text-slate-400"
+          className="size-4 text-brand-600"
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
@@ -50,6 +50,7 @@ export function DuoPartnerSelect({
           />
         </svg>
       </div>
+      <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />
     </div>
   );
 }

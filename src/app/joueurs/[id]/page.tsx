@@ -484,7 +484,7 @@ async function DetailedStats({
         opponentCounts.set(label, (opponentCounts.get(label) ?? 0) + 1);
       }
       if (oppSide.length === 2) {
-        const key = oppSide.map((p) => p.profiles?.pseudo ?? p.guest_name ?? "?").sort().join(" / ");
+        const key = oppSide.map((p) => p.profiles?.pseudo ?? p.guest_name ?? "?").sort().join(" & ");
         opponentDuoCounts.set(key, (opponentDuoCounts.get(key) ?? 0) + 1);
       }
     }

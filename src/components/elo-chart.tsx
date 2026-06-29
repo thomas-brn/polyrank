@@ -1,13 +1,8 @@
-"use client";
-
-import { useState } from "react";
-
 type HistoryPoint = { rating: number; played_at: string };
 export type DuoSeries = { partnerName: string; partnerId: string; points: HistoryPoint[] };
 
-const BRAND = "#2563eb";
-const SLATE = "#94a3b8";
-const GREEN = "#16a34a";
+const BRAND = "var(--brand-600)";
+const SLATE = "var(--brand-400)";
 
 function niceStep(range: number): number {
   const rough = range / 4;
@@ -56,12 +51,7 @@ export function EloChart({
   v1Points: HistoryPoint[];
   duoSeries?: DuoSeries[];
 }) {
-  const validDuos = duoSeries.filter((d) => d.points.length >= 2);
-  const [selectedDuoIdx, setSelectedDuoIdx] = useState<number | null>(
-    validDuos.length > 0 ? 0 : null,
-  );
-
-  const duoPoints = selectedDuoIdx !== null ? (validDuos[selectedDuoIdx]?.points ?? []) : [];
+  const duoPoints = duoSeries.find((d) => d.points.length >= 2)?.points ?? [];
 
   const W = 300, H = 110, PL = 36, PR = 6, PY = 8;
   const allRatings = [...globalPoints, ...v1Points, ...duoPoints].map((p) => p.rating);
@@ -87,49 +77,8 @@ export function EloChart({
   const has1v1 = v1Points.length >= 2;
   const hasDuo = duoPoints.length >= 2;
 
-  const legendItems = [
-    hasGlobal && { label: "Global", color: BRAND },
-    has1v1 && { label: "1v1", color: SLATE },
-    hasDuo && { label: "2v2", color: GREEN },
-  ].filter(Boolean) as { label: string; color: string }[];
-
   return (
     <div>
-      {/* Sélecteur de duo */}
-      {validDuos.length > 0 && (
-        <div className="mb-2 flex items-center gap-2">
-          <span className="inline-block h-0.5 w-4 shrink-0" style={{ backgroundColor: GREEN }} />
-          <select
-            value={selectedDuoIdx ?? ""}
-            onChange={(e) =>
-              setSelectedDuoIdx(e.target.value === "" ? null : Number(e.target.value))
-            }
-            className="min-w-0 flex-1 rounded-md border border-slate-200 bg-white py-0.5 pl-2 pr-6 text-[11px] text-slate-700 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
-          >
-            <option value="">— 2v2 masqué —</option>
-            {validDuos.map((duo, i) => {
-              const lastElo = Math.round(duo.points[duo.points.length - 1]?.rating ?? 0);
-              return (
-                <option key={duo.partnerId} value={i}>
-                  {duo.partnerName} — {lastElo}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-      )}
-
-      {/* Légende */}
-      {legendItems.length > 1 && (
-        <div className="mb-2 flex flex-wrap gap-3 text-[11px] text-slate-500">
-          {legendItems.map(({ label, color }) => (
-            <span key={label} className="flex items-center gap-1">
-              <span className="inline-block h-0.5 w-4" style={{ backgroundColor: color }} />
-              {label}
-            </span>
-          ))}
-        </div>
-      )}
 
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: H }} aria-hidden="true">
         {ticks.map((tick) => {
@@ -157,7 +106,7 @@ export function EloChart({
           <path d={chartPath(gxs, gys)} fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         )}
         {hasDuo && (
-          <path d={chartPath(dxs, dys)} fill="none" stroke={GREEN} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <path d={chartPath(dxs, dys)} fill="none" stroke={BRAND} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         )}
         {hasGlobal && (
           <circle cx={gxs[gxs.length - 1]} cy={gys[gys.length - 1]} r="3" fill={BRAND} />
@@ -166,7 +115,7 @@ export function EloChart({
           <circle cx={vxs[vxs.length - 1]} cy={vys[vys.length - 1]} r="2.5" fill={SLATE} />
         )}
         {hasDuo && (
-          <circle cx={dxs[dxs.length - 1]} cy={dys[dys.length - 1]} r="3" fill={GREEN} />
+          <circle cx={dxs[dxs.length - 1]} cy={dys[dys.length - 1]} r="3" fill={BRAND} />
         )}
       </svg>
     </div>
