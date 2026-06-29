@@ -10,7 +10,7 @@ export type Player = { name: string; profileId: string | null };
 const inputClass =
   "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
 
-type Suggestion = { id: string; pseudo: string };
+type Suggestion = { id: string; pseudo: string; schools: { name: string } | null };
 
 export function PlayerCombobox({
   value,
@@ -49,12 +49,12 @@ export function PlayerCombobox({
       const supabase = createClient();
       const { data } = await supabase
         .from("profiles")
-        .select("id, pseudo")
+        .select("id, pseudo, schools(name)")
         .ilike("pseudo", `%${q}%`)
         .not("pseudo", "is", null)
         .limit(8);
       if (!active) return;
-      const list = ((data ?? []) as Suggestion[]).filter(
+      const list = ((data ?? []) as unknown as Suggestion[]).filter(
         (s) => !excluded.includes(s.id),
       );
       setSuggestions(list);
@@ -123,8 +123,11 @@ export function PlayerCombobox({
                 }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
               >
-                <AtSign className="size-3.5 text-brand-500" />
-                {s.pseudo}
+                <AtSign className="size-3.5 shrink-0 text-brand-500" />
+                <span className="font-medium">{s.pseudo}</span>
+                {s.schools?.name ? (
+                  <span className="text-slate-400">- {s.schools.name}</span>
+                ) : null}
               </button>
             </li>
           ))}

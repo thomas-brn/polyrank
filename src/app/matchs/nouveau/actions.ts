@@ -67,11 +67,11 @@ export async function createMatch(
     return { error: "Tu ne peux pas être ton propre adversaire." };
   }
 
-  // Au moins un adversaire doit avoir un compte (taggé) : lui seul peut valider.
+  // Au moins un adversaire doit avoir un compte (taggé) : lui seul pourra contester.
   if (!opps.some((o) => o.profileId)) {
     return {
       error:
-        "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir valider le match.",
+        "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir contester le match.",
     };
   }
 
@@ -125,9 +125,9 @@ export async function createMatch(
     const forfaitA = crA >= 5;
     const forfaitB = crB >= 5;
     if (forfaitA && !forfaitB) {
-      winner = "B";
-    } else if (forfaitB && !forfaitA) {
       winner = "A";
+    } else if (forfaitB && !forfaitA) {
+      winner = "B";
     } else {
       const totalA = scoreA + crA;
       const totalB = scoreB + crB;
@@ -225,6 +225,9 @@ export async function createMatch(
     actor_id: user.id,
     type: "SOUMISSION",
   });
+
+  // Match validé d'office : on recalcule les classements immédiatement.
+  await supabase.rpc("recompute_ratings");
 
   redirect("/matchs");
 }

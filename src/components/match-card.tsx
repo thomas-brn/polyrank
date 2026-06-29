@@ -1,4 +1,4 @@
-import { Calendar, Clock, Check, MapPin } from "lucide-react";
+import { ArrowRight, Calendar, Clock, MapPin } from "lucide-react";
 
 import type { Mode } from "@/lib/mode";
 
@@ -24,11 +24,9 @@ export type MatchData = {
 };
 
 export const STATUS: Record<string, { label: string; className: string }> = {
-  SOUMIS:  { label: "En attente", className: "bg-amber-100 text-amber-700" },
-  VALIDE:  { label: "Validé",     className: "bg-green-100 text-green-700" },
-  REVALIDE:{ label: "Validé",     className: "bg-green-100 text-green-700" },
-  MODIFIE: { label: "Modifié",    className: "bg-amber-100 text-amber-700" },
-  CONTESTE:{ label: "Contesté",   className: "bg-red-100 text-red-700" },
+  VALIDE:  { label: "Validé",    className: "bg-green-100 text-green-700" },
+  CONTESTE:{ label: "Contesté",  className: "bg-red-100 text-red-700" },
+  EN_APPEL:{ label: "En appel",  className: "bg-amber-100 text-amber-700" },
 };
 
 export function sideNames(participants: MatchParticipant[], side: "A" | "B") {
@@ -163,23 +161,15 @@ function CardInner({
   const leftScore = leftSide === "A" ? match.score_a : match.score_b;
   const rightScore = leftSide === "A" ? match.score_b : match.score_a;
 
-  const status = STATUS[match.status] ?? {
-    label: match.status,
-    className: "bg-slate-100 text-slate-600",
-  };
-
   const dt = new Date(match.played_at);
   const date = dt.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
   const time = dt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <>
-      <div className="flex items-center justify-between px-3 pt-2.5 sm:px-4 sm:pt-3">
+      <div className="flex items-center px-3 pt-2.5 sm:px-4 sm:pt-3">
         <span className="text-[12px] font-medium tracking-[0.04em] text-slate-400 uppercase">
           {match.games?.name} · {match.format}
-        </span>
-        <span className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${status.className}`}>
-          {status.label}
         </span>
       </div>
 
@@ -234,35 +224,35 @@ export function MatchCard({
   match,
   mode = "fifachamp",
   leftSide = "A",
-  validateAction,
   from,
 }: {
   match: MatchData;
   mode?: Mode;
   leftSide?: "A" | "B";
-  validateAction?: (formData: FormData) => Promise<void>;
   from?: string;
 }) {
   const detailHref = `/matchs/${match.id}${from ? `?from=${from}` : ""}`;
+  const isContested = match.status === "CONTESTE";
+  const isAppeal = match.status === "EN_APPEL";
+  const isLitigious = isContested || isAppeal;
 
-  if (validateAction) {
+  if (isLitigious) {
     return (
-      <li className="flex rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <a
-          href={detailHref}
-          className="flex-1 block transition-colors hover:bg-slate-50 min-w-0"
-        >
+      <li className="rounded-xl border border-red-200 bg-white overflow-hidden">
+        <div className="grayscale opacity-60 pointer-events-none select-none">
           <CardInner match={match} mode={mode} leftSide={leftSide} />
-        </a>
-        <form action={validateAction} className="flex shrink-0">
-          <button
-            type="submit"
-            className="w-14 bg-green-500 text-white flex items-center justify-center hover:bg-green-600 active:bg-green-700 transition-colors"
-            aria-label="Valider ce match"
+        </div>
+        <div className="border-t border-red-200 bg-red-50 px-3 py-2 flex items-center justify-between gap-2">
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-red-600">
+            {isContested ? "Contesté" : "En appel"}
+          </span>
+          <a
+            href={detailHref}
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-red-700 hover:underline"
           >
-            <Check className="size-5 stroke-[2.5]" />
-          </button>
-        </form>
+            Voir la contestation <ArrowRight className="size-3" />
+          </a>
+        </div>
       </li>
     );
   }
