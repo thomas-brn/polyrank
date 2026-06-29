@@ -79,11 +79,12 @@ type DetailMatchRow = {
   match_participants: DetailParticipant[];
 };
 
-function initials(name: string): string {
-  const parts = name.trim().split(/[\s_-]+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
+// TODO: photos de profil — réactiver avec Supabase Storage
+// function initials(name: string): string {
+//   const parts = name.trim().split(/[\s_-]+/);
+//   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+//   return name.slice(0, 2).toUpperCase();
+// }
 
 type EloLine = { label: string; delta: number };
 
@@ -114,7 +115,7 @@ function SidePanel({
   const label =
     result === "win" ? "Victoire" : result === "loss" ? "Défaite" : "Nul";
   const multi = participants.length > 1;
-  const avatarSize = multi ? "size-5 text-[10px]" : "size-6 text-[11px]";
+  // const avatarSize = multi ? "size-5 text-[10px]" : "size-6 text-[11px]";
   const nameSize = multi ? "text-[12px]" : "text-[13px]";
 
   return (
@@ -131,11 +132,13 @@ function SidePanel({
               key={p.profile_id ?? p.guest_name}
               className={`flex items-center gap-1.5 ${align === "right" ? "flex-row-reverse" : ""}`}
             >
+              {/* TODO: photos de profil
               <div
                 className={`${avatarSize} rounded-full bg-white border-[1.5px] ${colors.avatar} flex items-center justify-center font-medium shrink-0`}
               >
                 {initials(name)}
               </div>
+              */}
               {p.profile_id ? (
                 <Link
                   href={`/joueurs/${p.profile_id}`}

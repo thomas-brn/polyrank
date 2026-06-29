@@ -48,11 +48,12 @@ export function sidePlayers(participants: MatchParticipant[], side: "A" | "B"): 
   return list.length ? list : [{ name: "?", tagged: false }];
 }
 
-function initials(name: string): string {
-  const parts = name.trim().split(/[\s_-]+/);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.slice(0, 2).toUpperCase();
-}
+// TODO: photos de profil — réactiver avec Supabase Storage
+// function initials(name: string): string {
+//   const parts = name.trim().split(/[\s_-]+/);
+//   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+//   return name.slice(0, 2).toUpperCase();
+// }
 
 export const PANEL_COLORS = {
   win: {
@@ -103,9 +104,9 @@ function Panel({
 
   const label = result === "win" ? "Victoire" : result === "loss" ? "Défaite" : "Nul";
   const multi = players.length > 1;
-  const avatarSize = multi
-    ? "size-5 text-[10px] sm:size-6 sm:text-[11px]"
-    : "size-6 text-[11px] sm:size-7 sm:text-[12px]";
+  // const avatarSize = multi
+  //   ? "size-5 text-[10px] sm:size-6 sm:text-[11px]"
+  //   : "size-6 text-[11px] sm:size-7 sm:text-[12px]";
   const nameSize = multi ? "text-[12px] sm:text-[14px]" : "text-[13px] sm:text-[15px]";
 
   return (
@@ -116,11 +117,13 @@ function Panel({
             key={name}
             className={`flex items-center gap-1.5 ${align === "right" ? "flex-row-reverse" : ""}`}
           >
+            {/* TODO: photos de profil
             <div
               className={`${avatarSize} rounded-full bg-white border-[1.5px] ${colors.avatar} flex items-center justify-center font-medium shrink-0`}
             >
               {initials(name)}
             </div>
+            */}
             {tagged ? (
               <strong className={`${nameSize} font-semibold ${colors.name} leading-tight`}>
                 {name}
