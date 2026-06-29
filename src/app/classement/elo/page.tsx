@@ -12,7 +12,7 @@ export default async function EloPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHero
-        title="Comment fonctionne l'Elo ?"
+        title="Comment fonctionne le classement ?"
         description={`Le système de points qui classe les joueurs ${sport}.`}
       >
         <Link

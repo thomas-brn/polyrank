@@ -46,4 +46,4 @@ yarn-error.log*
 next-env.d.ts
 
 # DB migrations
-supabase/migrations/
+supabase/
