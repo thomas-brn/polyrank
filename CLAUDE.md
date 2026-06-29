@@ -58,38 +58,42 @@ Two roles only: **Élève** (student) and **Admin**.
 
 ### Match lifecycle
 
+Matches are **auto-validated** on creation (Elo is applied immediately). The opponent can contest afterward; the creator resolves it, escalating to an admin if needed. See `docs/ELO.md` and `docs/DECISIONS.md`.
+
 ```
-SOUMIS → VALIDÉ
-                ↓ (if creator modifies a validated match)
-             MODIFIÉ → RE-VALIDÉ
-                ↓ (if an opponent contests)
-             CONTESTÉ → admin intervenes
+VALIDÉ (auto on creation)             → Elo applied immediately
+  ├─ creator edits their match        → stays VALIDÉ (Elo recomputed)
+  ├─ opponent contests → CONTESTÉ      → proposed fix stored in proposed_changes
+  │     ├─ creator accepts            → applies the fix (Elo recomputed)
+  │     └─ creator refuses → EN_APPEL → admin arbitrates (deletes or restores)
+  └─ opponent requests deletion → EN_APPEL → admin decides (deletes or restores), reason stored
 ```
 
-- **SOUMIS**: created by a student; freely editable by the creator.
-- **VALIDÉ**: confirmed by any tagged opposing player.
-- **MODIFIÉ**: a validated match edited by its creator reverts to pending validation.
-- **RE-VALIDÉ**: re-confirmed by any tagged opposing player (not necessarily the original).
-- **CONTESTÉ**: an opponent rejects the score; admin arbitrates and can delete/correct.
+- **VALIDÉ** (default): every match is valid from creation; Elo updates immediately (presumption of validity).
+- **CONTESTÉ**: a tagged opposing player rejects the score; Elo stays unchanged until resolved.
+- **EN_APPEL**: either the creator refused a contest, or a tagged opponent requested deletion — an admin must arbitrate. `proposed_changes` holds the contest fix or `{action:"DELETE",reason}`.
+- **Golden rule**: Elo changes **only** if the match is modified or deleted. A contest alone never moves Elo.
+- Status values: `VALIDE`, `CONTESTE`, `EN_APPEL` (no accents in DB). Ratings live in `player_ratings` / `duo_ratings`, recomputed by the `recompute_ratings()` RPC.
 
 ### Match participants
 
 - A single player can submit a match.
 - Other participants can be tagged if they have an account, or listed by name (informational, unlinked to a profile).
-- Validation must come from a tagged player on the **opposing** side.
+- Only a tagged player on the **opposing** side can contest a match or request its deletion.
 
 ### Permissions summary
 
 
-| Action                          | Élève                               | Admin |
-| ------------------------------- | ----------------------------------- | ----- |
-| Submit a score                  | ✅                                   | ✅     |
-| Edit an unvalidated match       | ✅ (creator only)                    | ✅     |
-| Edit a validated match          | ✅ (creator, triggers re-validation) | ✅     |
-| Validate an opponent's score    | ✅                                   | ✅     |
-| Contest a score                 | ✅                                   | ✅     |
-| Delete/correct a disputed match | ❌                                   | ✅     |
-| Manage accounts                 | ❌                                   | ✅     |
+| Action                              | Élève                          | Admin |
+| ----------------------------------- | ------------------------------ | ----- |
+| Submit a score (auto-validated)     | ✅                              | ✅     |
+| Edit own match (recomputes Elo)     | ✅ (creator)                    | ✅     |
+| Contest a match                     | ✅ (tagged opponent)            | ✅     |
+| Request deletion of a match         | ✅ (tagged opponent)            | ✅     |
+| Accept/refuse a contest on own match| ✅ (creator)                    | ✅     |
+| Appeal to admin (proof by email)    | ✅ (creator)                    | —     |
+| Arbitrate a match in appeal (delete/restore) | ❌                     | ✅     |
+| Manage accounts                     | ❌                             | ✅     |
 
 
 ## Project plan (see docs/plan.md)

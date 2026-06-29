@@ -76,19 +76,26 @@ Seeds : `FifaChamp` (has_score=true), `CoinCoin` (has_score=false).
 | `format` | text | Regex `^[1-4]V[1-4]$` — ex. `"1V1"`, `"2V2"` |
 | `played_at` | timestamptz | |
 | `location` | text | |
-| `status` | text | Cycle de vie (voir ci-dessous) |
+| `status` | text | `VALIDE` (défaut), `CONTESTE`, `EN_APPEL`. Voir cycle de vie ci-dessous |
 | `winner_side` | text | `A`, `B`, ou `NUL` |
 | `score_a` / `score_b` | int | Score chiffré, `null` pour les jeux sans score |
 | `stats` | jsonb | Infos additionnelles extensibles |
+| `proposed_changes` | jsonb | Correction proposée par l'adversaire (CONTESTE) ou demande de suppression (`{"action":"DELETE","reason":...}` en EN_APPEL). `null` hors litige |
 | `side_a_label` / `side_b_label` | text | Libellé libre par camp |
 | `created_at` / `updated_at` | timestamptz | `updated_at` mis à jour automatiquement par trigger |
 
-**Cycle de vie du statut :**
+**Cycle de vie du statut (validation automatique) :**
 ```
-SOUMIS → VALIDE
-SOUMIS → MODIFIE → REVALIDE
-SOUMIS ou MODIFIE → CONTESTE (admin arbitre)
+VALIDE (auto à la création)            → Elo appliqué immédiatement
+  ├─ créateur modifie son match        → reste VALIDE (Elo recalculé)
+  ├─ adversaire conteste → CONTESTE    → correction proposée stockée dans proposed_changes
+  │     ├─ créateur accepte            → applique la correction (Elo recalculé)
+  │     └─ créateur refuse → EN_APPEL  → admin arbitre (supprime ou rétablit)
+  └─ adversaire demande la suppression → EN_APPEL  → admin tranche (supprime ou rétablit)
+        (motif stocké dans proposed_changes.reason)
 ```
+Seul un joueur tagué côté **adverse** peut contester ou demander la suppression.
+L'Elo ne change que si le match est modifié ou supprimé. Voir `docs/ELO.md` et `docs/DECISIONS.md`.
 
 ---
 
@@ -117,9 +124,56 @@ Journal d'audit du cycle de vie des matchs.
 | `id` | uuid PK | |
 | `match_id` | uuid | FK → `matches` (cascade delete) |
 | `actor_id` | uuid | FK → `profiles` |
-| `type` | text | `SOUMISSION`, `VALIDATION`, `MODIFICATION`, `CONTESTATION`, `REVALIDATION`, `ARBITRAGE_ADMIN` |
+| `type` | text | `SOUMISSION`, `VALIDATION`, `MODIFICATION`, `CONTESTATION`, `REVALIDATION`, `ARBITRAGE_ADMIN`, `DEMANDE_SUPPRESSION` |
 | `note` | text | |
 | `created_at` | timestamptz | |
+
+---
+
+### `player_ratings`
+Note Elo par joueur, par jeu et par périmètre. Écrite uniquement par `recompute_ratings()`. Voir `docs/ELO.md`.
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `game_id` | uuid | FK → `games` (clé primaire composite) |
+| `profile_id` | uuid | FK → `profiles` (clé primaire composite) |
+| `scope` | text | `GLOBAL` (tous les matchs) ou `1V1` (clé primaire composite) |
+| `rating` | numeric(8,2) | Elo, défaut 1000 |
+| `played` / `won` / `lost` | int | Compteurs |
+| `updated_at` | timestamptz | |
+
+Le « meilleur 2v2 » d'un joueur se dérive de `duo_ratings` (max sur ses duos).
+
+---
+
+### `duo_ratings`
+Note Elo par duo (paire de joueurs) et par jeu, sur les matchs stricts 2v2. La paire est stockée triée (`profile_lo < profile_hi`). Écrite uniquement par `recompute_ratings()`.
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `game_id` | uuid | FK → `games` (clé primaire composite) |
+| `profile_lo` / `profile_hi` | uuid | FK → `profiles`, paire triée (clé primaire composite) |
+| `rating` | numeric(8,2) | Elo du duo, défaut 1000 |
+| `played` / `won` / `lost` | int | Compteurs |
+| `updated_at` | timestamptz | |
+
+---
+
+### `rating_history`
+Série temporelle des notes Elo après chaque match, par joueur et par périmètre. Alimente la courbe d'évolution sur le profil. Écrite uniquement par `recompute_ratings()` (entièrement reconstruite à chaque appel). Voir `docs/ELO.md`.
+
+| Colonne | Type | Notes |
+|---|---|---|
+| `id` | bigint PK | generated always as identity |
+| `game_id` | uuid | FK → `games` |
+| `profile_id` | uuid | FK → `profiles` (cascade delete) |
+| `scope` | text | `GLOBAL` ou `1V1` |
+| `match_id` | uuid | FK → `matches` (set null on delete) — match source |
+| `rating` | numeric(8,2) | Note du joueur après ce match |
+| `played_at` | timestamptz | Date du match (axe X de la courbe) |
+| `created_at` | timestamptz | |
+
+Index : `(game_id, profile_id, scope, played_at)`.
 
 ---
 
@@ -129,7 +183,13 @@ Journal d'audit du cycle de vie des matchs.
 |---|---|---|
 | `handle_new_user()` | trigger (after insert on `auth.users`) | Crée automatiquement un `profiles` vide au signup |
 | `set_updated_at()` | trigger (before update on `matches`) | Met à jour `matches.updated_at` |
-| `validate_match(p_match_id)` | RPC (security definer) | Valide un match côté adverse ; gère `SOUMIS→VALIDE` et `MODIFIE→REVALIDE` |
+| `recompute_ratings()` | RPC (security definer) | Recalcule toutes les notes (`player_ratings`, `duo_ratings`, `rating_history`) par rejeu chronologique (Elo K=40, départ 1000). Appelée par l'app après création / modification / suppression d'un match. Voir `docs/ELO.md` |
+| `contest_match(match_id, proposed)` | RPC (security definer) | Adversaire tagué conteste un match VALIDE → CONTESTE, stocke la correction proposée |
+| `accept_contest(match_id)` | RPC (security definer) | Créateur (ou admin) accepte la correction → applique `proposed_changes`, repasse en VALIDE |
+| `refuse_contest(match_id)` | RPC (security definer) | Créateur (ou admin) refuse la contestation → EN_APPEL |
+| `request_deletion(match_id, reason)` | RPC (security definer) | Adversaire tagué demande la suppression d'un match VALIDE → EN_APPEL, motif stocké |
+| `approve_deletion(match_id)` | RPC (security definer, admin) | Admin approuve → supprime le match (cascade) |
+| `reject_deletion(match_id)` | RPC (security definer, admin) | Admin rejette la demande/l'appel → rétablit le match en VALIDE |
 | `is_admin()` | fonction stable (security definer) | Utilisée dans les policies RLS |
 
 ---
@@ -145,5 +205,8 @@ Journal d'audit du cycle de vie des matchs.
 | `matches` | publique | créateur (insert/update/delete) ou admin |
 | `match_participants` | publique | créateur du match ou admin |
 | `match_events` | publique | acteur concerné (insert) ou admin |
+| `player_ratings` | publique | aucune (écrites par `recompute_ratings()`, security definer) |
+| `duo_ratings` | publique | aucune (écrites par `recompute_ratings()`, security definer) |
+| `rating_history` | publique | aucune (écrite par `recompute_ratings()`, security definer) |
 
 > Note : la RLS agit au niveau ligne. Pour masquer une colonne précise (`profiles.email`) on utilise les privilèges au niveau colonne (`GRANT SELECT (cols)`), pas une policy.

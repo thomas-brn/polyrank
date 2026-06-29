@@ -16,12 +16,12 @@ Deux rôles uniquement, pas de rôle "capitaine".
 |---|---|---|
 | Inscription | Email + promo, ouvert à tous | Idem + flag `is_admin` en BDD |
 | Connexion | Email → code OTP reçu par mail | Idem |
-| Soumettre un score | ✅ | ✅ |
-| Modifier un match non validé | ✅ (créateur uniquement) | ✅ |
-| Modifier un match validé | ✅ (créateur, mais re-validation requise) | ✅ |
-| Valider un score adverse | ✅ | ✅ |
-| Contester un score | ✅ | ✅ |
-| Supprimer/corriger un match litigieux | ❌ | ✅ |
+| Soumettre un score (validé automatiquement) | ✅ | ✅ |
+| Modifier son propre match (→ recalcul Elo) | ✅ (créateur) | ✅ |
+| Contester un match | ✅ (adversaire tagué) | ✅ |
+| Accepter / refuser une contestation sur son match | ✅ (créateur) | ✅ |
+| Faire appel à l'admin (preuve par mail) | ✅ (créateur) | — |
+| Arbitrer / corriger / supprimer un match contesté | ❌ | ✅ |
 | Gérer les comptes | ❌ | ✅ |
 
 #### Authentification
@@ -49,26 +49,41 @@ Après l'email (OTP), l'utilisateur complète son profil :
 
 #### Cycle de vie d'un match
 
+> 🔄 **Révision (post-Phase 1).** Le flux initial « SOUMIS → en attente de validation par l'adversaire » est abandonné au profit d'une **validation automatique**. Raison : l'Elo se calcule **dès la fin du match** et ne peut pas attendre une validation manuelle. Détail du calcul dans `docs/ELO.md`.
+
 ```
-SOUMIS → VALIDÉ
-           ↓ (si modification par le créateur)
-        MODIFIÉ → RE-VALIDÉ
-           ↓ (si refus par un adversaire)
-        CONTESTÉ → intervention admin
+VALIDÉ (auto à la création)              → Elo appliqué immédiatement
+   │
+   ├─ le créateur modifie son match ───────────────→ Elo recalculé
+   │
+   └─ un adversaire CONTESTE → CONTESTÉ   (Elo inchangé)
+         │
+         ├─ le créateur accepte → match corrigé/supprimé → Elo recalculé
+         └─ le créateur refuse → EN APPEL : formulaire in-app (message + photo)
+               → l'app envoie un mail à arbitre@polyrank.fr (infos du match + photo)
+               │
+               ├─ l'admin corrige / supprime ─────→ Elo recalculé
+               └─ l'admin confirme l'original ────→ aucun changement
 ```
 
-- **Soumis** : créé par un élève, pas encore confirmé. Modifiable librement par le créateur.
-- **Validé** : confirmé par n'importe quel joueur adverse tagué dans le match.
-- **Modifié** : le créateur modifie un match déjà validé → repasse en attente de validation.
-- **Re-validé** : confirmé par n'importe quel joueur adverse tagué (pas forcément le même qu'à l'origine).
-- **Contesté** : un adversaire refuse le score → l'admin tranche.
+- **Validé (auto)** : tout match est validé dès sa création. L'Elo des joueurs est mis à jour immédiatement (présomption de validité).
+- **Modifié par le créateur** : le créateur peut corriger son propre match ; l'Elo est recalculé. Pas de re-validation par l'adversaire.
+- **Contesté** : un joueur tagué côté adverse refuse le score. Le match passe en CONTESTÉ, mais **l'Elo ne bouge pas** tant que le litige n'est pas tranché.
+- **Résolution** : c'est au **créateur** d'accepter ou de refuser la contestation.
+  - S'il accepte → il corrige ou supprime le match → l'Elo est recalculé.
+  - S'il refuse → il **fait appel depuis l'app** : un formulaire lui permet de joindre un message et une **photo du tableau final**. L'application **envoie alors automatiquement un mail à arbitre@polyrank.fr** contenant les informations du match et la photo. Le match passe en EN APPEL.
+- **Arbitrage admin** : l'admin tranche. S'il corrige ou supprime le match, l'Elo est recalculé ; s'il confirme le résultat d'origine, rien ne change.
+
+**Règle d'or** : l'Elo ne change **que** si le match est **modifié ou supprimé**. Une contestation, à elle seule, ne modifie jamais l'Elo.
+
+> **Implémentation de l'appel** : interface entièrement dans l'app. La photo est stockée dans **Supabase Storage** ; l'envoi du mail à `arbitre@polyrank.fr` (infos + photo en pièce jointe ou lien signé) passe par un service d'email transactionnel appelé côté serveur (Server Action / route Next.js). Provider à confirmer (recommandation : **Resend**, qui s'intègre bien avec Next.js/Vercel). Un enregistrement de l'appel est conservé (table dédiée `match_appeals` : match, auteur, message, photo, date d'envoi).
 
 #### Participants d'un match
 
 - Un seul joueur suffit pour soumettre un match
 - Il peut tagger les autres participants s'ils ont un compte
 - Si un participant n'a pas de compte, son nom peut être renseigné à titre informatif (pas lié à un profil)
-- La validation doit venir d'un joueur tagué côté adverse
+- Seul un joueur tagué côté adverse peut **contester** le match (il n'y a plus de validation manuelle : le match est validé automatiquement)
 
 ---
 
