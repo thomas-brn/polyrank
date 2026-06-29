@@ -24,7 +24,8 @@ const SCOPES_BY_MODE: Record<Mode, { scope: Scope; label: string }[]> = {
     { scope: "VILLES", label: "Villes" },
   ],
   coincoin: [
-    { scope: "GLOBAL", label: "Joueurs" },
+    { scope: "GLOBAL", label: "Général" },
+    { scope: "1V1", label: "1v1" },
     { scope: "2V2", label: "2v2" },
     { scope: "VILLES", label: "Villes" },
   ],
@@ -371,9 +372,9 @@ export default async function ClassementPage({
                         {v.ville}
                       </p>
                       <p className="text-[11px] text-slate-400">
-                        Global {Math.round(v.eloGlobal)}
-                        {v.elo1v1 > 0 ? ` • 1v1 ${Math.round(v.elo1v1)}` : ""}
-                        {v.elo2v2 > 0 ? ` • 2v2 ${Math.round(v.elo2v2)}` : ""}
+                        Global ({Math.round(v.eloGlobal)})
+                        {v.elo1v1 > 0 ? ` • 1v1 (${Math.round(v.elo1v1)})` : ""}
+                        {v.elo2v2 > 0 ? ` • 2v2 (${Math.round(v.elo2v2)})` : ""}
                       </p>
                     </div>
                   </div>

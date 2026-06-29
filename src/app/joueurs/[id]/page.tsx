@@ -230,7 +230,7 @@ async function EloSection({ userId, mode }: { userId: string; mode: Mode }) {
 
   const cards: { title: string; sub?: string; rating?: number; rank: number | null }[] = [
     { title: `Classement ${sport}`, sub: "général", rating: eloGlobal?.rating, rank: rankGlobal },
-    ...(mode === "fifachamp" ? [{ title: `Classement ${sport} 1v1`, sub: "général", rating: elo1v1?.rating, rank: rank1v1 }] : []),
+    { title: `Classement ${sport} 1v1`, sub: "général", rating: elo1v1?.rating, rank: rank1v1 },
     { title: `Classement ${sport} 2v2`, sub: bestDuo ? `avec ${bestDuo.partnerName}` : undefined, rating: bestDuo?.rating, rank: rankDuo },
   ];
 
@@ -244,7 +244,7 @@ async function EloSection({ userId, mode }: { userId: string; mode: Mode }) {
 }
 
 function EloSkeleton({ mode }: { mode: Mode }) {
-  const count = mode === "fifachamp" ? 3 : 2;
+  const count = 3;
   return (
     <div className="mt-6 flex flex-col gap-2">
       {Array.from({ length: count }).map((_, i) => (
@@ -573,7 +573,7 @@ async function DetailedStats({
           </p>
           <EloChart
             globalPoints={globalHistory}
-            v1Points={mode === "fifachamp" ? v1History : []}
+            v1Points={v1History}
           />
         </div>
       ) : null}

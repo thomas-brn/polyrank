@@ -36,7 +36,7 @@ function toValidPeriod(raw: string | undefined): Period {
 }
 
 function toValidMatchFormat(raw: string | undefined, mode: Mode): MatchFormat {
-  const valid: MatchFormat[] = mode === "coincoin" ? ["global", "2v2"] : ["global", "1v1", "2v2"];
+  const valid: MatchFormat[] = ["global", "1v1", "2v2"];
   return valid.includes(raw as MatchFormat) ? (raw as MatchFormat) : "global";
 }
 
@@ -742,7 +742,7 @@ async function DetailedStats({
     else v1History = hist ?? [];
   }
 
-  if (matchFormat === "2v2" && mode === "fifachamp") {
+  if (matchFormat === "2v2") {
     let dhq = supabase
       .from("duo_rating_history")
       .select("profile_lo, profile_hi, rating, played_at")

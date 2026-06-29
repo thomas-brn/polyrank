@@ -13,7 +13,7 @@ const MATCH_SELECT =
   "id, format, status, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
 
 function toValidMatchFormat(raw: string | undefined, mode: Mode): MatchFormat {
-  const valid: MatchFormat[] = mode === "coincoin" ? ["global", "2v2"] : ["global", "1v1", "2v2"];
+  const valid: MatchFormat[] = ["global", "1v1", "2v2"];
   return valid.includes(raw as MatchFormat) ? (raw as MatchFormat) : "global";
 }
 
@@ -107,7 +107,7 @@ export default async function MatchsPage({
       <div className="flex flex-col gap-2">
         <PageHero
           title={`Historique ${sport}`}
-          description={`Tous les matchs ${sport} joués, à valider ou contester.`}
+          description={`Tous les matchs de ${sport} joués.`}
         />
         <Suspense fallback={null}>
           <MatchFormatTabs current={matchFormat} basePath="/matchs" mode={mode} />

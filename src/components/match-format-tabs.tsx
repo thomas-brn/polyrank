@@ -13,6 +13,7 @@ const FORMAT_TABS: Record<Mode, { key: MatchFormat; label: string }[]> = {
   ],
   coincoin: [
     { key: "global", label: "Global" },
+    { key: "1v1", label: "1v1" },
     { key: "2v2", label: "2v2" },
   ],
 };
