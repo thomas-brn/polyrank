@@ -50,13 +50,18 @@ export async function updateMatch(
 
   const { data: existing } = await supabase
     .from("matches")
-    .select("id, created_by")
+    .select("id, created_by, status")
     .eq("id", matchId)
-    .single<{ id: string; created_by: string }>();
+    .single<{ id: string; created_by: string; status: string }>();
 
   if (!existing) return { error: "Match introuvable." };
   if (existing.created_by !== user.id)
     return { error: "Tu n'es pas le créateur de ce match." };
+  if (existing.status === "EN_APPEL")
+    return {
+      error:
+        "Ce match est en appel : un admin doit le trancher avant toute modification.",
+    };
 
   const gameId = String(formData.get("game_id") ?? "");
   const winnerInput = String(formData.get("winner") ?? "");
@@ -80,7 +85,7 @@ export async function updateMatch(
   if (!opps.some((o) => o.profileId))
     return {
       error:
-        "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir valider le match.",
+        "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir contester le match.",
     };
 
   const identityKeys = [
@@ -130,9 +135,9 @@ export async function updateMatch(
     const forfaitA = crA >= 5;
     const forfaitB = crB >= 5;
     if (forfaitA && !forfaitB) {
-      winner = "B";
-    } else if (forfaitB && !forfaitA) {
       winner = "A";
+    } else if (forfaitB && !forfaitA) {
+      winner = "B";
     } else {
       const totalA = scoreA + crA;
       const totalB = scoreB + crB;
@@ -179,6 +184,7 @@ export async function updateMatch(
       }
     : null;
 
+  // Une correction par le créateur ré-affirme la validité et clôt toute contestation en cours.
   const { error: updateErr } = await supabase
     .from("matches")
     .update({
@@ -189,6 +195,8 @@ export async function updateMatch(
       score_b: scoreB,
       location,
       stats,
+      status: "VALIDE",
+      proposed_changes: null,
     })
     .eq("id", matchId);
 
@@ -227,6 +235,9 @@ export async function updateMatch(
     type: "MODIFICATION",
   });
 
+  // Le résultat a changé : on recalcule les classements.
+  await supabase.rpc("recompute_ratings");
+
   redirect(`/matchs/${matchId}`);
 }
 
@@ -240,16 +251,19 @@ export async function deleteMatch(matchId: string, _formData: FormData) {
 
   const { data: match } = await supabase
     .from("matches")
-    .select("created_by")
+    .select("created_by, status")
     .eq("id", matchId)
-    .single<{ created_by: string }>();
+    .single<{ created_by: string; status: string }>();
 
-  if (!match || match.created_by !== user.id) {
+  if (!match || match.created_by !== user.id || match.status === "EN_APPEL") {
     redirect(`/matchs/${matchId}`);
   }
 
   // Cascade supprime participants et événements automatiquement.
   await supabase.from("matches").delete().eq("id", matchId);
+
+  // Le match disparaît de l'historique : on recalcule les classements.
+  await supabase.rpc("recompute_ratings");
 
   redirect("/matchs");
 }
