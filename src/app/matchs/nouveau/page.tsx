@@ -49,8 +49,8 @@ export default async function NouveauMatchPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHero
-        title={`Saisir un match ${sport}`}
-        description="Résultat rapide. La validation par l'adversaire viendra ensuite."
+        title={`Nouveau match de ${sport}`}
+        description="Ajoute un match à ton historique."
       />
       <NewMatchForm games={games ?? []} myPseudo={profile.pseudo} myId={user.id} />
     </div>

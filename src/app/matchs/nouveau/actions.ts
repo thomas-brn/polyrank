@@ -50,6 +50,7 @@ export async function createMatch(
   const gameId = String(formData.get("game_id") ?? "");
   const winnerInput = String(formData.get("winner") ?? "");
   const location = String(formData.get("location") ?? "").trim() || null;
+  const isFriendly = formData.get("is_friendly") === "true";
 
   let parsed: { mates?: unknown; opps?: unknown } = {};
   try {
@@ -186,6 +187,7 @@ export async function createMatch(
       score_b: scoreB,
       location,
       stats,
+      is_friendly: isFriendly,
     })
     .select("id")
     .single<{ id: string }>();

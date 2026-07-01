@@ -80,6 +80,7 @@ Seeds : `FifaChamp` (has_score=true), `CoinCoin` (has_score=false).
 | `status` | text | `VALIDE` (défaut), `CONTESTE`, `EN_APPEL`. Voir cycle de vie ci-dessous |
 | `winner_side` | text | `A`, `B`, ou `NUL` |
 | `score_a` / `score_b` | int | Score chiffré, `null` pour les jeux sans score |
+| `is_friendly` | boolean | `true` = match amical : compte dans l'historique et les stats, mais exclu du calcul Elo (`recompute_ratings()` ignore ces matchs). Défaut `false` |
 | `stats` | jsonb | Infos additionnelles extensibles |
 | `proposed_changes` | jsonb | En CONTESTE : correction proposée (`winner_side`, `score_a`/`score_b`, `stats` — voir `accept_contest`). En EN_APPEL (suppression) : `{"action":"DELETE","reason":...}`. `null` hors litige |
 | `side_a_label` / `side_b_label` | text | Libellé libre par camp |

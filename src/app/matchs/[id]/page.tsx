@@ -67,6 +67,7 @@ type DetailMatchRow = {
   game_id: string;
   format: string;
   status: string;
+  is_friendly: boolean;
   winner_side: "A" | "B" | "NUL";
   score_a: number | null;
   score_b: number | null;
@@ -169,7 +170,7 @@ function SidePanel({
               key={lineLabel}
               className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-500" : "text-slate-400"}`}
             >
-              {formatEloDelta(delta)} Élo {lineLabel}
+              {formatEloDelta(delta)} Elo {lineLabel}
             </span>
           ))}
         </div>
@@ -201,7 +202,7 @@ export default async function MatchDetailPage({
   const { data: match } = await supabase
     .from("matches")
     .select(
-      "id, game_id, format, status, winner_side, score_a, score_b, played_at, location, created_by, stats, proposed_changes, games(name, has_score, slug), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo, annee, schools(name)))",
+      "id, game_id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, created_by, stats, proposed_changes, games(name, has_score, slug), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo, annee, schools(name)))",
     )
     .eq("id", id)
     .single<DetailMatchRow>();
@@ -436,8 +437,8 @@ export default async function MatchDetailPage({
     return lines;
   }
 
-  const aEloLines = buildEloLines(aLinkedIds[0] ?? null, aDuoDelta);
-  const bEloLines = buildEloLines(bLinkedIds[0] ?? null, bDuoDelta);
+  const aEloLines = match.is_friendly ? [] : buildEloLines(aLinkedIds[0] ?? null, aDuoDelta);
+  const bEloLines = match.is_friendly ? [] : buildEloLines(bLinkedIds[0] ?? null, bDuoDelta);
 
   const boundDelete = deleteMatch.bind(null, match.id);
   const boundAccept = acceptContest.bind(null, match.id);
@@ -481,11 +482,18 @@ export default async function MatchDetailPage({
           <span className="text-[12px] font-medium tracking-[0.04em] text-slate-400 uppercase">
             {match.games?.name} · {match.format}
           </span>
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${status.className}`}
-          >
-            {status.label}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {match.is_friendly && (
+              <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[12px] font-medium text-sky-600">
+                Amical
+              </span>
+            )}
+            <span
+              className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${status.className}`}
+            >
+              {status.label}
+            </span>
+          </div>
         </div>
 
         {/* Score panels */}

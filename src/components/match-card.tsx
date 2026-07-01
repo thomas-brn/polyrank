@@ -14,6 +14,7 @@ export type MatchData = {
   id: string;
   format: string;
   status: string;
+  is_friendly: boolean;
   winner_side: "A" | "B" | "NUL";
   score_a: number | null;
   score_b: number | null;
@@ -170,10 +171,15 @@ function CardInner({
 
   return (
     <>
-      <div className="flex items-center px-3 pt-2.5 sm:px-4 sm:pt-3">
+      <div className="flex items-center justify-between px-3 pt-2.5 sm:px-4 sm:pt-3">
         <span className="text-[12px] font-medium tracking-[0.04em] text-slate-400 uppercase">
           {match.games?.name} · {match.format}
         </span>
+        {match.is_friendly && (
+          <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[11px] font-medium text-sky-600">
+            Amical
+          </span>
+        )}
       </div>
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch px-2.5 pt-2 pb-2 sm:px-3 sm:pt-2.5 sm:pb-2.5">
