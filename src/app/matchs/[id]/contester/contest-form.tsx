@@ -168,7 +168,7 @@ export function ContestForm({
         disabled={pending}
         className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
       >
-        {pending ? "Envoi en cours…" : "Soumettre la contestation"}
+        {pending ? "Envoi en cours..." : "Soumettre la contestation"}
       </button>
     </form>
   );

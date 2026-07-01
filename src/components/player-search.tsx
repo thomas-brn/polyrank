@@ -63,7 +63,7 @@ export function PlayerSearch() {
           onFocus={() => {
             if (results.length > 0) setOpen(true);
           }}
-          placeholder="Rechercher un joueur…"
+          placeholder="Rechercher un joueur..."
           className="w-full rounded-lg border border-slate-300 py-2 pr-3 pl-9 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
         />
       </div>

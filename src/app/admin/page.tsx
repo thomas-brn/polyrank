@@ -143,7 +143,7 @@ export default async function AdminPage() {
                         type="submit"
                         className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
                       >
-                        Garder le match
+                        Rejeter, garder le match
                       </button>
                     </form>
                     <Link

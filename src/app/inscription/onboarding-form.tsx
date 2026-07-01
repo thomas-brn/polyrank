@@ -39,7 +39,7 @@ function SchoolSelect({
         className={inputClass}
       >
         <option value="" disabled>
-          Choisis ton école…
+          Choisis ton école...
         </option>
         {schools.filter((s) => s.slug !== EXTE_SLUG).map((school) => (
           <option key={school.id} value={school.id}>
@@ -73,7 +73,7 @@ function AnneeSelect() {
         className={inputClass}
       >
         <option value="" disabled>
-          Choisis ton année…
+          Choisis ton année...
         </option>
         {ANNEES.map((a) => (
           <option key={a.value} value={a.value}>
@@ -110,8 +110,8 @@ function AuthenticatedForm({
       <div>
         <PseudoField selfId={selfId} />
         <p className="mt-1 text-xs text-amber-600">
-          Ton pseudo est <strong>public</strong>, évite ton nom et prénom. Tu
-          pourras en changer une fois par mois.
+          Ton pseudo est <strong>public</strong>, évite ton nom et ton prénom. Tu
+          pourras le modifier une fois par mois.
         </p>
       </div>
 
@@ -126,7 +126,7 @@ function AuthenticatedForm({
         disabled={pending}
         className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
       >
-        {pending ? "Enregistrement…" : "Créer mon profil"}
+        {pending ? "Enregistrement..." : "Créer mon profil"}
       </button>
     </form>
   );
@@ -284,7 +284,7 @@ function UnauthenticatedForm({ schools }: { schools: School[] }) {
           disabled={loading}
           className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
         >
-          {loading ? "Envoi…" : "Recevoir le code"}
+          {loading ? "Envoi..." : "Recevoir le code"}
         </button>
         <button
           type="button"
@@ -334,7 +334,7 @@ function UnauthenticatedForm({ schools }: { schools: School[] }) {
           disabled={loading || code.length < 6}
           className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
         >
-          {loading ? "Validation…" : "Valider et créer mon compte"}
+          {loading ? "Validation..." : "Valider et créer mon compte"}
         </button>
 
         <div className="flex flex-col gap-1 text-center text-xs text-slate-500">
@@ -378,7 +378,7 @@ function UnauthenticatedForm({ schools }: { schools: School[] }) {
       <div>
         <PseudoField selfId={null} />
         <p className="mt-1 text-xs text-amber-600">
-          Ton pseudo est <strong>public</strong>, évite ton nom et prénom. <br />
+          Ton pseudo est <strong>public</strong>, évite ton nom et ton prénom. <br />
           Tu pourras le modifier une fois par mois.
         </p>
       </div>

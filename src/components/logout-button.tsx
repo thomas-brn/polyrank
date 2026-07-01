@@ -23,7 +23,7 @@ export function LogoutButton() {
       disabled={loading}
       className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-60"
     >
-      {loading ? "Déconnexion…" : "Se déconnecter"}
+      {loading ? "Déconnexion..." : "Se déconnecter"}
     </button>
   );
 }

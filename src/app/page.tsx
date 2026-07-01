@@ -42,7 +42,7 @@ export default async function HomePage() {
         >
           <h2 className="font-semibold">Historique {sport}</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Tous les matchs joués, à valider ou contester.
+            Tous les matchs joués, litiges en attente ou contestations.
           </p>
         </Link>
         <RulesOverlay mode={mode} />

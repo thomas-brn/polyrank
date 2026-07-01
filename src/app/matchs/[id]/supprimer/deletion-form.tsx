@@ -31,7 +31,7 @@ export function DeletionForm({ matchId }: { matchId: string }) {
           required
           minLength={10}
           maxLength={500}
-          placeholder="Ex. : ce match n'a jamais eu lieu, doublon avec un autre match…"
+          placeholder="Ex. : ce match n'a jamais eu lieu, doublon avec un autre match..."
           className={`${textareaClass} mt-1`}
         />
         <p className="mt-1 text-xs text-slate-400">
@@ -48,7 +48,7 @@ export function DeletionForm({ matchId }: { matchId: string }) {
         disabled={pending}
         className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60"
       >
-        {pending ? "Envoi en cours…" : "Envoyer la demande de suppression"}
+        {pending ? "Envoi en cours..." : "Envoyer la demande de suppression"}
       </button>
     </form>
   );

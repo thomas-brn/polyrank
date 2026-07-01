@@ -78,7 +78,7 @@ export function PseudoField({
       ) : isCurrent ? (
         <p className="mt-1 text-xs text-slate-400">Ton pseudo actuel.</p>
       ) : availability === "checking" ? (
-        <p className="mt-1 text-xs text-slate-400">Vérification…</p>
+        <p className="mt-1 text-xs text-slate-400">Vérification...</p>
       ) : availability === "available" ? (
         <p className="mt-1 text-xs text-green-600">✓ Disponible</p>
       ) : availability === "taken" ? (

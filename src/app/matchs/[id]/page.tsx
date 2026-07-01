@@ -49,8 +49,8 @@ const STAT_LABELS: Record<string, string> = {
   cartons_rouges: "Cartons rouges",
   cartons_jaunes: "Cartons jaunes",
   retournees: "Retournées",
-  coups_francs: "Coups francs",
-  sorties_blessure: "Sorties blessure",
+  coups_francs: "Coups francs directs",
+  sorties_blessure: "Sorties sur blessure",
   fautes_sans_carton: "Fautes sans carton",
 };
 const STAT_KEYS = Object.keys(STAT_LABELS);

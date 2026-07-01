@@ -120,7 +120,7 @@ export default function LoginPage() {
             disabled={loading || code.length < 6}
             className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
           >
-            {loading ? "Vérification…" : "Se connecter"}
+            {loading ? "Vérification..." : "Se connecter"}
           </button>
 
           <div className="mt-3 flex flex-col gap-1 text-center text-xs text-slate-500">
@@ -186,7 +186,7 @@ export default function LoginPage() {
           disabled={loading}
           className="mt-4 w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
         >
-          {loading ? "Envoi…" : "Recevoir le code"}
+          {loading ? "Envoi..." : "Recevoir le code"}
         </button>
 
         <p className="mt-4 text-center text-xs text-slate-500">

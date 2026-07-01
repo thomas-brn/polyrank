@@ -60,7 +60,7 @@ export function EditProfileForm({
           className={inputClass}
         >
           <option value="" disabled>
-            Choisis ton école…
+            Choisis ton école...
           </option>
           {schools.filter((s) => s.slug !== EXTE_SLUG).map((school) => (
             <option key={school.id} value={school.id}>
@@ -91,7 +91,7 @@ export function EditProfileForm({
             className={inputClass}
           >
             <option value="" disabled>
-              Choisis ton année…
+              Choisis ton année...
             </option>
             {ANNEES.map((annee) => (
               <option key={annee.value} value={annee.value}>
@@ -112,7 +112,7 @@ export function EditProfileForm({
           disabled={pending}
           className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
         >
-          {pending ? "Enregistrement…" : "Enregistrer"}
+          {pending ? "Enregistrement..." : "Enregistrer"}
         </button>
         <button
           type="button"

@@ -68,7 +68,7 @@ export default async function SupprimerMatchPage({
       <PageHeader title="Demander la suppression" />
 
       <p className="text-sm text-slate-600">
-        Si ce match ne devrait pas exister (jamais joué, doublon, erreur…), tu
+        Si ce match ne devrait pas exister (jamais joué, doublon, erreur...), tu
         peux demander sa suppression. Contrairement à une contestation, c&apos;est
         un admin qui tranchera, pas le créateur.
       </p>

@@ -190,7 +190,7 @@ export function ModeToggle({
               <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white">
                 {otherCount > 9 ? "9+" : otherCount}
               </span>
-              {otherCount > 1 ? "Matchs" : "Match"} à valider sur un autre jeu
+              {otherCount > 1 ? "Litiges" : "Litige"} en attente sur un autre jeu
             </p>
           );
         })()}

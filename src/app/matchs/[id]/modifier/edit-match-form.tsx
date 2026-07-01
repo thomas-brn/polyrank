@@ -126,7 +126,7 @@ export function EditMatchForm({
       {/* Joueurs */}
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-slate-500">Ton équipe</p>
+          <p className="text-xs font-semibold text-slate-500">Ton camp</p>
           <input
             value={myPseudo}
             disabled
@@ -155,7 +155,7 @@ export function EditMatchForm({
         </div>
 
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-semibold text-slate-500">Adversaires</p>
+          <p className="text-xs font-semibold text-slate-500">Camp adverse</p>
           {opps.map((player, i) => (
             <PlayerCombobox
               key={i}
@@ -181,7 +181,7 @@ export function EditMatchForm({
 
       {!hasTaggedOpp ? (
         <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-          Pour ajouter un match, au moins un des adversaires doit avoir  un compte, tague le avec <strong>@</strong>.
+          Pour enregistrer ce match, au moins un des adversaires doit avoir un compte, Tague-le avec <strong>@</strong>.
           </p>
       ) : null}
 
@@ -303,7 +303,7 @@ export function EditMatchForm({
           disabled={pending || !canSubmit}
           className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
         >
-          {pending ? "Enregistrement…" : "Enregistrer les modifications"}
+          {pending ? "Enregistrement..." : "Enregistrer les modifications"}
         </button>
         <button
           type="button"

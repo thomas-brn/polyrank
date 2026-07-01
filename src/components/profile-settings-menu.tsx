@@ -87,7 +87,7 @@ export function ProfileSettingsMenu({
             disabled={loggingOut}
             className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60"
           >
-            {loggingOut ? "Deconnexion..." : "Se deconnecter"}
+            {loggingOut ? "Déconnexion..." : "Se déconnecter"}
           </button>
         </div>
       )}

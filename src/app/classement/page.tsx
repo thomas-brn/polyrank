@@ -18,13 +18,13 @@ type Scope = "GLOBAL" | "1V1" | "2V2" | "VILLES";
 
 const SCOPES_BY_MODE: Record<Mode, { scope: Scope; label: string }[]> = {
   fifachamp: [
-    { scope: "GLOBAL", label: "Général" },
+    { scope: "GLOBAL", label: "Global" },
     { scope: "1V1", label: "1v1" },
     { scope: "2V2", label: "2v2" },
     { scope: "VILLES", label: "Villes" },
   ],
   coincoin: [
-    { scope: "GLOBAL", label: "Général" },
+    { scope: "GLOBAL", label: "Global" },
     { scope: "1V1", label: "1v1" },
     { scope: "2V2", label: "2v2" },
     { scope: "VILLES", label: "Villes" },
