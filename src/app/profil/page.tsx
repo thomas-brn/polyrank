@@ -560,6 +560,7 @@ async function MatchHistory({
         Mes matchs {formatLabel ? `${formatLabel} de ` : "de "}{sport}
       </p>
       <MatchHistoryList
+        key={mode}
         initialMatches={initialMatches}
         userId={userId}
         mode={mode}
