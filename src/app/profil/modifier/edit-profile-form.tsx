@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import { PseudoField } from "@/components/pseudo-field";
 import { ANNEES, EXTE_SLUG } from "@/lib/constants";
@@ -24,6 +25,7 @@ export function EditProfileForm({
     annee: string | null;
   };
 }) {
+  const router = useRouter();
   const [ecole, setEcole] = useState(initial.schoolId ?? "");
   const [state, formAction, pending] = useActionState<EditState, FormData>(
     updateProfile,
@@ -104,13 +106,22 @@ export function EditProfileForm({
         <p className="text-sm text-red-600">{state.error}</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
-      >
-        {pending ? "Enregistrement…" : "Enregistrer"}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button
+          type="submit"
+          disabled={pending}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+        >
+          {pending ? "Enregistrement…" : "Enregistrer"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+        >
+          Annuler
+        </button>
+      </div>
     </form>
   );
 }
