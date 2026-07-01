@@ -314,8 +314,14 @@ export default async function ClassementPage({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
-        <PageHero title={`Classement ${sport}`} description="Différents classements, différents modes de jeu.">
-          <EloOverlay mode={mode} />
+        <PageHero
+          title={`Classement ${sport}`}
+          description="Différents classements, différents modes de jeu."
+          topRightAction={<EloOverlay mode={mode} variant="bubble" />}
+        >
+          <div className="hidden md:block">
+            <EloOverlay mode={mode} />
+          </div>
         </PageHero>
 
       {/* Onglets de périmètre — style identique au profil */}
@@ -392,8 +398,7 @@ export default async function ClassementPage({
           {rows.length === 0 ? (
             <ComingSoon>
               Aucun joueur classé pour l&apos;instant
-              {!showAll ? " (au moins 5 matchs requis)" : ""}. Les classements se
-              remplissent au fil des matchs enregistrés.
+              {!showAll ? " (au moins 5 matchs requis)" : ""}.
             </ComingSoon>
           ) : (
             <ol className="flex flex-col gap-2">

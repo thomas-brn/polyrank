@@ -8,7 +8,13 @@ import type { Mode } from "@/lib/mode";
 import { CoinCoinElo } from "./elo/coincoin-elo";
 import { FifaChampElo } from "./elo/fifachamp-elo";
 
-export function EloOverlay({ mode }: { mode: Mode }) {
+export function EloOverlay({
+  mode,
+  variant = "full",
+}: {
+  mode: Mode;
+  variant?: "full" | "bubble";
+}) {
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -35,13 +41,23 @@ export function EloOverlay({ mode }: { mode: Mode }) {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/30"
-      >
-        <Info className="h-3.5 w-3.5" />
-        Comment fonctionnent les classements ?
-      </button>
+      {variant === "bubble" ? (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Fonctionnement des classements"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white transition-colors hover:bg-white/30"
+        >
+          <Info className="h-5 w-5" />
+        </button>
+      ) : (
+        <button
+          onClick={() => setOpen(true)}
+          className="inline-flex items-center gap-1 rounded-lg bg-white/20 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-white/30"
+        >
+          <Info className="h-3 w-3" />
+          Fonctionnement des classements
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col">
