@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { updateMatch, type MatchState } from "./actions";
@@ -70,6 +71,7 @@ export function EditMatchForm({
   initialLocation: string;
   initialStats: InitialStats;
 }) {
+  const router = useRouter();
   const [mates, setMates] = useState<Player[]>(initialMates);
   const [opps, setOpps] = useState<Player[]>(
     initialOpps.length > 0 ? initialOpps : [{ name: "", profileId: null }],
@@ -295,13 +297,22 @@ export function EditMatchForm({
         <p className="text-sm text-red-600">{state.error}</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending || !canSubmit}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
-      >
-        {pending ? "Enregistrement…" : "Enregistrer les modifications"}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button
+          type="submit"
+          disabled={pending || !canSubmit}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+        >
+          {pending ? "Enregistrement…" : "Enregistrer les modifications"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+        >
+          Annuler
+        </button>
+      </div>
     </form>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Info, Plus } from "lucide-react";
 
 import { createMatch, type NewMatchState } from "./actions";
@@ -35,6 +36,7 @@ export function NewMatchForm({
   myPseudo: string;
   myId: string;
 }) {
+  const router = useRouter();
   const [mates, setMates] = useState<Player[]>([]);
   const [opps, setOpps] = useState<Player[]>([emptyPlayer()]);
   const [isFriendly, setIsFriendly] = useState(false);
@@ -278,13 +280,22 @@ export function NewMatchForm({
         <p className="text-sm text-red-600">{state.error}</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending || !canSubmit}
-        className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
-      >
-        {pending ? "Enregistrement…" : "Enregistrer le match"}
-      </button>
+      <div className="flex flex-col gap-2">
+        <button
+          type="submit"
+          disabled={pending || !canSubmit}
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-60"
+        >
+          {pending ? "Enregistrement…" : "Enregistrer le match"}
+        </button>
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+        >
+          Annuler
+        </button>
+      </div>
     </form>
   );
 }
