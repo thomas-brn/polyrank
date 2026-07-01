@@ -21,7 +21,7 @@ export async function PageHero({
   const mode = await getMode();
 
   return (
-    <section className="relative flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-accent p-6 pb-3 text-white md:flex-row md:items-center md:justify-between md:gap-6 md:pb-6">
+    <section className="relative flex flex-col gap-4 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 to-brand-accent p-6 pb-3 text-white md:flex-row md:items-center md:justify-between md:gap-6 md:pb-6">
       {topRightAction && (
         <div className="absolute right-4 top-4 md:hidden">
           {topRightAction}

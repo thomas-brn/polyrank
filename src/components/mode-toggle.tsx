@@ -109,12 +109,12 @@ export function ModeToggle({
   return (
     <>
       {/* ── Mobile : pill segmenté pleine largeur ── */}
-      <div className="-mx-3 w-[calc(100%+1.5rem)] md:hidden">
-        <div className="relative flex rounded-xl bg-white/15 p-1 ring-1 ring-white/20">
+      <div className="-mx-6 -mb-3 w-[calc(100%+3rem)] md:hidden">
+        <div className="relative flex rounded-b-xl bg-white/15 p-1 ring-1 ring-white/20">
           {/* Pilule glissante */}
           <div
             aria-hidden
-            className="pointer-events-none absolute inset-1 w-[calc(50%-4px)] rounded-lg bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
+            className="pointer-events-none absolute inset-1.5 w-[calc(50%-6px)] rounded-xl bg-white shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)]"
             style={{
               transform: `translateX(${idx === 0 ? "0" : "100%"})`,
             }}
