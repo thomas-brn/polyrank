@@ -125,8 +125,7 @@ export default async function MatchsPage({
       ) : (
         <ul className="flex flex-col gap-3">
           {matches.map((match) => {
-            const creatorSide = match.match_participants.find((p) => p.is_creator)?.side ?? "B";
-            const leftSide = creatorSide === "A" ? "B" : "A";
+            const leftSide = match.match_participants.find((p) => p.is_creator)?.side ?? "A";
             return <MatchCard key={match.id} match={match} mode={mode} leftSide={leftSide} from="matchs" />;
           })}
         </ul>

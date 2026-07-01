@@ -85,21 +85,40 @@ export const PANEL_COLORS = {
   },
 };
 
+// Match cell background for the personal history view (/profil): a shade darker
+// than PANEL_COLORS so the inner team panels read as a lighter tint of the same hue.
+// `border`/`vsText`/`vsBar` are a further shade darker, for the cell outline and the VS divider.
+export const CARD_COLORS = {
+  win: {
+    coincoin: { bg: "bg-green-200", hoverBg: "hover:bg-green-300", border: "border-green-300", vsText: "text-green-700", vsBar: "bg-green-400" },
+    fifachamp: { bg: "bg-blue-200", hoverBg: "hover:bg-blue-300", border: "border-blue-300", vsText: "text-blue-700", vsBar: "bg-blue-400" },
+  },
+  loss: { bg: "bg-red-200", hoverBg: "hover:bg-red-300", border: "border-red-300", vsText: "text-red-700", vsBar: "bg-red-400" },
+  draw: { bg: "bg-slate-200", hoverBg: "hover:bg-slate-300", border: "border-slate-300", vsText: "text-slate-600", vsBar: "bg-slate-400" },
+};
+
+function resultFor(match: MatchData, side: "A" | "B"): "win" | "loss" | "draw" {
+  if (match.winner_side === "NUL") return "draw";
+  return match.winner_side === side ? "win" : "loss";
+}
+
 function Panel({
   players,
   result,
+  colorResult = result,
   mode,
   align,
 }: {
   players: SidePlayer[];
   result: "win" | "loss" | "draw";
+  colorResult?: "win" | "loss" | "draw";
   mode: Mode;
   align: "left" | "right";
 }) {
   const colors =
-    result === "win"
+    colorResult === "win"
       ? PANEL_COLORS.win[mode]
-      : result === "loss"
+      : colorResult === "loss"
         ? PANEL_COLORS.loss
         : PANEL_COLORS.draw;
 
@@ -109,10 +128,18 @@ function Panel({
   //   ? "size-5 text-[10px] sm:size-6 sm:text-[11px]"
   //   : "size-6 text-[11px] sm:size-7 sm:text-[12px]";
   const nameSize = multi ? "text-[12px] sm:text-[14px]" : "text-[13px] sm:text-[15px]";
+  // Names sit next to the VS divider: right-aligned in the left cell, left-aligned in the right cell.
+  const namesNearVs = align === "left" ? "items-end" : "items-start";
 
   return (
-    <div className={`${colors.bg} rounded-lg px-2 py-1.5 sm:px-2.5 sm:py-2 flex flex-col gap-1 sm:gap-1.5 justify-center`}>
-      <div className={`flex flex-col gap-1 sm:gap-1.5 ${align === "right" ? "items-end" : "items-start"}`}>
+    <div className={`${colors.bg} rounded-lg px-2 py-1.5 sm:px-2.5 sm:py-2 relative flex flex-col justify-center`}>
+      <span
+        className={`absolute top-1.5 sm:top-2 ${align === "right" ? "right-2 sm:right-2.5 text-right" : "left-2 sm:left-2.5"} text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.1em] ${colors.label} opacity-70`}
+      >
+        {label}
+      </span>
+
+      <div className={`flex flex-col gap-1 sm:gap-1.5 ${namesNearVs}`}>
         {players.map(({ name, tagged }) => (
           <div
             key={name}
@@ -137,12 +164,6 @@ function Panel({
           </div>
         ))}
       </div>
-
-      <span
-        className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.1em] ${colors.label} opacity-70 ${align === "right" ? "text-right" : ""}`}
-      >
-        {label}
-      </span>
     </div>
   );
 }
@@ -151,16 +172,30 @@ function CardInner({
   match,
   mode,
   leftSide,
+  from,
 }: {
   match: MatchData;
   mode: Mode;
   leftSide: "A" | "B";
+  from?: string;
 }) {
   const rightSide: "A" | "B" = leftSide === "A" ? "B" : "A";
 
-  const isDraw = match.winner_side === "NUL";
-  const leftWins = !isDraw && match.winner_side === leftSide;
-  const rightWins = !isDraw && match.winner_side === rightSide;
+  const leftResult = resultFor(match, leftSide);
+  const rightResult = resultFor(match, rightSide);
+
+  // In the personal history view (/profil), leftSide is always the profile
+  // owner: tint both team panels with their result rather than each side's own.
+  const isProfile = from === "profil";
+  const sharedColorResult = isProfile ? leftResult : undefined;
+  const vsColors = isProfile
+    ? leftResult === "win"
+      ? CARD_COLORS.win[mode]
+      : leftResult === "loss"
+        ? CARD_COLORS.loss
+        : CARD_COLORS.draw
+    : null;
+  const infoTextClass = vsColors?.vsText ?? "text-slate-400";
 
   const leftScore = leftSide === "A" ? match.score_a : match.score_b;
   const rightScore = leftSide === "A" ? match.score_b : match.score_a;
@@ -172,7 +207,7 @@ function CardInner({
   return (
     <>
       <div className="flex items-center justify-between px-3 pt-2.5 sm:px-4 sm:pt-3">
-        <span className="text-[12px] font-medium tracking-[0.04em] text-slate-400 uppercase">
+        <span className={`text-[12px] font-medium tracking-[0.04em] uppercase ${infoTextClass}`}>
           {match.games?.name} · {match.format}
         </span>
         {match.is_friendly && (
@@ -185,22 +220,24 @@ function CardInner({
       <div className="grid grid-cols-[1fr_auto_1fr] items-stretch px-2.5 pt-2 pb-2 sm:px-3 sm:pt-2.5 sm:pb-2.5">
         <Panel
           players={sidePlayers(match.match_participants, leftSide)}
-          result={isDraw ? "draw" : leftWins ? "win" : "loss"}
+          result={leftResult}
+          colorResult={sharedColorResult}
           mode={mode}
           align="left"
         />
 
         <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3">
-          <div className="w-px flex-1 bg-slate-200" />
-          <span className="text-[22px] sm:text-[26px] font-medium italic text-slate-400 leading-none whitespace-nowrap">
+          <div className={`w-px flex-1 ${vsColors?.vsBar ?? "bg-slate-200"}`} />
+          <span className={`text-[22px] sm:text-[26px] font-medium italic leading-none whitespace-nowrap ${vsColors?.vsText ?? "text-slate-400"}`}>
             VS
           </span>
-          <div className="w-px flex-1 bg-slate-200" />
+          <div className={`w-px flex-1 ${vsColors?.vsBar ?? "bg-slate-200"}`} />
         </div>
 
         <Panel
           players={sidePlayers(match.match_participants, rightSide)}
-          result={isDraw ? "draw" : rightWins ? "win" : "loss"}
+          result={rightResult}
+          colorResult={sharedColorResult}
           mode={mode}
           align="right"
         />
@@ -208,16 +245,16 @@ function CardInner({
 
       <div className="pb-2.5 sm:pb-3 px-3 sm:px-4 flex items-center justify-center gap-2">
         {match.location && (
-          <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 shrink-0">
+          <span className={`inline-flex items-center gap-1 text-[11px] shrink-0 ${infoTextClass}`}>
             <MapPin className="size-3" />
             {match.location}
           </span>
         )}
-        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+        <span className={`inline-flex items-center gap-1 text-[11px] ${infoTextClass}`}>
           <Calendar className="size-3" />
           {date}
         </span>
-        <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
+        <span className={`inline-flex items-center gap-1 text-[11px] ${infoTextClass}`}>
           <Clock className="size-3" />
           {time}
         </span>
@@ -227,7 +264,7 @@ function CardInner({
 }
 
 /** leftSide: which side (A or B) is displayed on the left.
- *  History view → creator on right → pass the opposite of creator's side.
+ *  History view → creator on left → pass the creator's side.
  *  Profile view → player on left → pass the player's own side. */
 export function MatchCard({
   match,
@@ -249,7 +286,7 @@ export function MatchCard({
     return (
       <li className="rounded-xl border border-red-200 bg-white overflow-hidden">
         <div className="grayscale opacity-60 pointer-events-none select-none">
-          <CardInner match={match} mode={mode} leftSide={leftSide} />
+          <CardInner match={match} mode={mode} leftSide={leftSide} from={from} />
         </div>
         <div className="border-t border-red-200 bg-red-50 px-3 py-2 flex items-center justify-between gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-wide text-red-600">
@@ -266,13 +303,26 @@ export function MatchCard({
     );
   }
 
+  const isProfile = from === "profil";
+  const leftResult = resultFor(match, leftSide);
+  const cardColors = isProfile
+    ? leftResult === "win"
+      ? CARD_COLORS.win[mode]
+      : leftResult === "loss"
+        ? CARD_COLORS.loss
+        : CARD_COLORS.draw
+    : null;
+  const cardClasses = cardColors
+    ? `${cardColors.bg} ${cardColors.hoverBg} ${cardColors.border}`
+    : "bg-white hover:bg-slate-50 border-slate-200";
+
   return (
     <li>
       <a
         href={detailHref}
-        className="block rounded-xl border border-slate-200 bg-white overflow-hidden transition-colors hover:bg-slate-50"
+        className={`block rounded-xl border overflow-hidden transition-colors ${cardClasses}`}
       >
-        <CardInner match={match} mode={mode} leftSide={leftSide} />
+        <CardInner match={match} mode={mode} leftSide={leftSide} from={from} />
       </a>
     </li>
   );
