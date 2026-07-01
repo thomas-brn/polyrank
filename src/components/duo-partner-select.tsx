@@ -4,9 +4,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 export function DuoPartnerSelect({
   partners,
   selectedPartnerId,
+  basePath = "/profil",
 }: {
   partners: { id: string; pseudo: string; rating: number }[];
   selectedPartnerId?: string;
+  basePath?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -18,7 +20,7 @@ export function DuoPartnerSelect({
     params.set("format", "2v2");
     if (value) params.set("duo", value);
     if (period) params.set("period", period);
-    router.replace(`/profil?${params.toString()}`, { scroll: false });
+    router.replace(`${basePath}?${params.toString()}`, { scroll: false });
   }
 
   return (
@@ -28,7 +30,7 @@ export function DuoPartnerSelect({
         onChange={handleChange}
         className="w-full appearance-none bg-transparent py-2.5 pr-6 text-center text-sm font-semibold text-brand-600 focus:outline-none"
       >
-        <option value="">Tous mes duos</option>
+        <option value="">Tous les duos</option>
         {partners.map((p) => (
           <option key={p.id} value={p.id}>
             Avec {p.pseudo}
