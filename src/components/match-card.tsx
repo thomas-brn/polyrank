@@ -227,11 +227,11 @@ function CardInner({
         />
 
         <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3">
-          <div className={`w-px flex-1 ${vsColors?.vsBar ?? "bg-slate-200"}`} />
+          <div className={`w-px flex-1 min-h-2 sm:min-h-2.5 ${vsColors?.vsBar ?? "bg-slate-200"}`} />
           <span className={`text-[22px] sm:text-[26px] font-medium italic leading-none whitespace-nowrap ${vsColors?.vsText ?? "text-slate-400"}`}>
             VS
           </span>
-          <div className={`w-px flex-1 ${vsColors?.vsBar ?? "bg-slate-200"}`} />
+          <div className={`w-px flex-1 min-h-2 sm:min-h-2.5 ${vsColors?.vsBar ?? "bg-slate-200"}`} />
         </div>
 
         <Panel

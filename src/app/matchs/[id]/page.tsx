@@ -506,11 +506,11 @@ export default async function MatchDetailPage({
             eloLines={aEloLines}
           />
           <div className="flex flex-col items-center justify-center gap-1 px-2">
-            <div className="w-px flex-1 bg-slate-200" />
+            <div className="w-px flex-1 min-h-2 bg-slate-200" />
             <span className="text-[22px] font-medium italic text-slate-400 leading-none whitespace-nowrap">
               VS
             </span>
-            <div className="w-px flex-1 bg-slate-200" />
+            <div className="w-px flex-1 min-h-2 bg-slate-200" />
           </div>
           <SidePanel
             participants={bParticipants}
