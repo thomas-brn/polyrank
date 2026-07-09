@@ -7,6 +7,7 @@ import { ProfileSettingsMenu } from "@/components/profile-settings-menu";
 import { type MatchData } from "@/components/match-card";
 import { MatchHistoryList } from "@/components/match-history-list";
 import { PeriodTabs, type Period } from "@/components/period-tabs";
+import { MoreStatsDisclosure } from "@/components/more-stats-disclosure";
 import { MatchFormatTabs, type MatchFormat } from "@/components/match-format-tabs";
 import { DuoPartnerSelect } from "@/components/duo-partner-select";
 import { EloChart, type DuoSeries } from "@/components/elo-chart";
@@ -164,7 +165,7 @@ export default async function ProfilPage({
           description={user.email ?? undefined}
           topRightAction={<ProfileSettingsMenu variant="icon" />}
         >
-          <dl className="flex flex-col gap-1 text-sm text-brand-50">
+          <dl className="mt-3 flex flex-col gap-1 text-sm text-brand-50">
             <div className="flex items-center gap-2">
               <dt className="text-brand-200">École</dt>
               <dd className="font-medium text-white">{ecoleLabel}</dd>
@@ -213,30 +214,11 @@ export default async function ProfilPage({
           <PeriodStats userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} />
         </Suspense>
 
-        <details className="group flex flex-col gap-3">
-          <div className="order-1 flex flex-col gap-3">
-            <Suspense key={statsKey} fallback={<DetailedStatsSpinner />}>
-              <DetailedStats userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} duoPartnerId={duoPartnerId} />
-            </Suspense>
-          </div>
-          <summary className="order-2 flex cursor-pointer list-none items-center justify-center gap-1 text-[13px] font-medium text-slate-400 hover:text-slate-600 select-none">
-            <span className="group-open:hidden">Plus de statistiques</span>
-            <span className="hidden group-open:inline">Moins de statistiques</span>
-            <svg
-              className="size-3.5 transition-transform group-open:rotate-180"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </summary>
-        </details>
+        <MoreStatsDisclosure>
+          <Suspense key={statsKey} fallback={<DetailedStatsSpinner />}>
+            <DetailedStats userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} duoPartnerId={duoPartnerId} />
+          </Suspense>
+        </MoreStatsDisclosure>
       </div>
 
       {/* Historique des matchs */}
@@ -795,9 +777,9 @@ async function DetailedStats({
       {topOpponent ? (
         <div className="rounded-xl border border-slate-200 bg-white">
           <div className="grid grid-cols-3 divide-x divide-slate-100">
-            <FreqStat label="Partenaire" tooltip="Le joueur avec lequel tu as le plus joué pendant cette période" name={topPartner?.label ?? null} count={topPartner?.count ?? null} unit="matchs" />
-            <FreqStat label="Rival" tooltip="Le joueur contre qui tu as le plus joué pendant cette période" name={topOpponent.label} count={topOpponent.count} unit="confrontations" />
-            <FreqStat label="Duo rival" tooltip="Le duo contre lequel tu as le plus joué pendant cette période" name={topOpponentDuo?.label ?? null} count={topOpponentDuo?.count ?? null} unit="matchs" />
+            <FreqStat align="start" label="Partenaire" tooltip="Le joueur avec lequel tu as le plus joué pendant cette période" name={topPartner?.label ?? null} count={topPartner?.count ?? null} unit="matchs" />
+            <FreqStat align="center" label="Rival" tooltip="Le joueur contre qui tu as le plus joué pendant cette période" name={topOpponent.label} count={topOpponent.count} unit="confrontations" />
+            <FreqStat align="end" label="Duo rival" tooltip="Le duo contre lequel tu as le plus joué pendant cette période" name={topOpponentDuo?.label ?? null} count={topOpponentDuo?.count ?? null} unit="matchs" />
           </div>
         </div>
       ) : null}
@@ -852,7 +834,27 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FreqStat({ label, tooltip, name, count, unit }: { label: string; tooltip: string; name: string | null; count: number | null; unit: string }) {
+const TOOLTIP_ALIGN = {
+  start: "left-0",
+  center: "left-1/2 -translate-x-1/2",
+  end: "right-0",
+} as const;
+
+function FreqStat({
+  label,
+  tooltip,
+  name,
+  count,
+  unit,
+  align = "center",
+}: {
+  label: string;
+  tooltip: string;
+  name: string | null;
+  count: number | null;
+  unit: string;
+  align?: keyof typeof TOOLTIP_ALIGN;
+}) {
   return (
     <div className="flex flex-1 flex-col items-center px-2 py-3 text-center">
       <span className="flex items-center gap-0.5 text-[10px] uppercase tracking-wide text-slate-400">
@@ -863,7 +865,9 @@ function FreqStat({ label, tooltip, name, count, unit }: { label: string; toolti
               <path fillRule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clipRule="evenodd" />
             </svg>
           </span>
-          <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-36 -translate-x-1/2 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] font-normal normal-case leading-snug tracking-normal text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 peer-focus:opacity-100">
+          <span
+            className={`pointer-events-none absolute bottom-full z-20 mb-1.5 w-36 rounded-lg bg-slate-800 px-2 py-1.5 text-[10px] font-normal normal-case leading-snug tracking-normal text-white opacity-0 shadow-lg transition-opacity peer-hover:opacity-100 peer-focus:opacity-100 ${TOOLTIP_ALIGN[align]}`}
+          >
             {tooltip}
           </span>
         </span>
