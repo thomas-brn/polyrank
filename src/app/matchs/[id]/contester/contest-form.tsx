@@ -84,7 +84,7 @@ export function ContestForm({
               <span className="text-center truncate">{sideBLabel}</span>
             </div>
             <div className="grid grid-cols-[1fr_72px_72px] items-center border-t border-slate-100 px-3 py-2">
-              <span className="text-sm font-medium text-slate-700">Buts</span>
+              <span className="min-w-0 text-sm font-medium text-slate-700">Buts</span>
               <div className="flex justify-center">
                 <input
                   name="score_a"
@@ -111,7 +111,7 @@ export function ContestForm({
                 key={key}
                 className="grid grid-cols-[1fr_72px_72px] items-center border-t border-slate-100 px-3 py-2"
               >
-                <span className="text-sm text-slate-700">{label}</span>
+                <span className="min-w-0 text-sm text-slate-700">{label}</span>
                 <div className="flex justify-center">
                   <input
                     name={`stats_a_${key}`}

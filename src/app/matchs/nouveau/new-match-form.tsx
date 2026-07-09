@@ -163,7 +163,7 @@ export function NewMatchForm({
               <span className="text-center">Adverse</span>
             </div>
             <div className="grid grid-cols-[1fr_72px_72px] items-center border-t border-slate-100 px-3 py-2">
-              <span className="text-sm font-medium text-slate-700">Buts</span>
+              <span className="min-w-0 text-sm font-medium text-slate-700">Buts</span>
               <div className="flex justify-center">
                 <input
                   name="score_a"
@@ -190,7 +190,7 @@ export function NewMatchForm({
                 key={key}
                 className="grid grid-cols-[1fr_72px_72px] items-center border-t border-slate-100 px-3 py-2"
               >
-                <span className="text-sm text-slate-700">
+                <span className="min-w-0 text-sm text-slate-700">
                   {label}
                   {!required && (
                     <span className="ml-1 text-xs text-slate-400">(optionnel)</span>

@@ -88,7 +88,7 @@ export function PlayerCombobox({
             onFocus={() => {
               if (suggestions.length > 0) setOpen(true);
             }}
-            placeholder="@pseudo ou nom"
+            placeholder="@nom"
             className={`${inputClass} ${tagged ? "border-brand-400 pr-8" : ""}`}
           />
           {tagged ? (
