@@ -319,7 +319,7 @@ export default async function ClassementPage({
           description="Différents classements, différents modes de jeu."
           topRightAction={<EloOverlay mode={mode} variant="bubble" />}
         >
-          <div className="hidden md:block">
+          <div className="mt-3 hidden md:block">
             <EloOverlay mode={mode} />
           </div>
         </PageHero>

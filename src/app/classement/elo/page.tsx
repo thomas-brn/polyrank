@@ -17,7 +17,7 @@ export default async function EloPage() {
       >
         <Link
           href="/classement"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/30"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/30"
         >
           Retour au classement
         </Link>

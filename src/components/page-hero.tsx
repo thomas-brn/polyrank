@@ -32,7 +32,7 @@ export async function PageHero({
         {description ? (
           <p className="mt-1 max-w-md text-sm text-brand-50">{description}</p>
         ) : null}
-        {children ? <div className="mt-4">{children}</div> : null}
+        {children}
       </div>
       <ModeToggle current={mode} pendingCounts={pendingCounts} />
     </section>
