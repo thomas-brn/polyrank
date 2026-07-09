@@ -19,6 +19,7 @@ export function PlayerCombobox({
   removable = false,
   required = false,
   excludeIds,
+  alignRight = false,
 }: {
   value: Player;
   onChange: (player: Player) => void;
@@ -26,6 +27,7 @@ export function PlayerCombobox({
   removable?: boolean;
   required?: boolean;
   excludeIds?: string[];
+  alignRight?: boolean;
 }) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [open, setOpen] = useState(false);
@@ -111,7 +113,9 @@ export function PlayerCombobox({
       </div>
 
       {open ? (
-        <ul className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+        <ul
+          className={`absolute z-20 mt-1 ${alignRight ? "right-0" : "left-0"} w-max min-w-full max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg`}
+        >
           {suggestions.map((s) => (
             <li key={s.id}>
               <button
@@ -121,7 +125,7 @@ export function PlayerCombobox({
                   onChange({ name: s.pseudo, profileId: s.id });
                   setOpen(false);
                 }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-slate-50"
+                className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm whitespace-nowrap hover:bg-slate-50"
               >
                 <AtSign className="size-3.5 shrink-0 text-brand-500" />
                 <span className="font-medium">{s.pseudo}</span>

@@ -163,6 +163,7 @@ export function EditMatchForm({
               required
               removable={opps.length > 1}
               excludeIds={usedIds}
+              alignRight
               onChange={(p) => updateAt(setOpps, i, p)}
               onRemove={() => removeAt(setOpps, i)}
             />
