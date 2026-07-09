@@ -24,12 +24,13 @@ export function PseudoField({
   // Lettres (accents inclus), chiffres, - et _
   const PSEUDO_RE = /^[a-zA-Z0-9À-ɏ_-]+$/;
   const hasInvalidChars = trimmed.length > 0 && !PSEUDO_RE.test(trimmed);
+  const isTooLong = trimmed.length > 15;
   const isCurrent =
     originalPseudo.length > 0 &&
     trimmed.toLowerCase() === originalPseudo.toLowerCase();
 
   useEffect(() => {
-    if (isEmpty || isCurrent || hasInvalidChars) return;
+    if (isEmpty || isCurrent || hasInvalidChars || isTooLong) return;
     let active = true;
     const timer = setTimeout(async () => {
       const supabase = createClient();
@@ -67,6 +68,7 @@ export function PseudoField({
         name="pseudo"
         required
         minLength={2}
+        maxLength={15}
         value={value}
         onChange={(e) => handleChange(e.target.value)}
         className={inputClass}
@@ -75,6 +77,8 @@ export function PseudoField({
         <p className="mt-1 text-xs text-red-600">
           Lettres, chiffres, - et _ uniquement.
         </p>
+      ) : isTooLong ? (
+        <p className="mt-1 text-xs text-red-600">15 caractères maximum.</p>
       ) : isCurrent ? (
         <p className="mt-1 text-xs text-slate-400">Ton pseudo actuel.</p>
       ) : availability === "checking" ? (

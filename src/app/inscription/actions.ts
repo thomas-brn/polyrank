@@ -27,6 +27,9 @@ export async function completeProfile(
   if (pseudo.length < 2) {
     return { error: "Choisis un pseudo (2 caractères minimum)." };
   }
+  if (pseudo.length > 15) {
+    return { error: "Pseudo trop long (15 caractères maximum)." };
+  }
   if (!/^[a-zA-Z0-9À-ɏ_-]+$/.test(pseudo)) {
     return { error: "Le pseudo ne peut contenir que des lettres, chiffres, - et _." };
   }
