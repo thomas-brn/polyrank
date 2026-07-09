@@ -1,4 +1,5 @@
-import { ArrowRight, Calendar, Clock, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Calendar, Clock, MapPin, Trophy } from "lucide-react";
 
 import type { Mode } from "@/lib/mode";
 
@@ -37,7 +38,7 @@ export function sideNames(participants: MatchParticipant[], side: "A" | "B") {
   return list.length ? list.join(" & ") : "?";
 }
 
-export type SidePlayer = { name: string; tagged: boolean };
+export type SidePlayer = { name: string; tagged: boolean; profileId?: string | null };
 
 export function sidePlayers(participants: MatchParticipant[], side: "A" | "B"): SidePlayer[] {
   const list = participants
@@ -45,6 +46,7 @@ export function sidePlayers(participants: MatchParticipant[], side: "A" | "B"): 
     .map((p) => ({
       name: p.profiles?.pseudo ?? p.guest_name ?? "?",
       tagged: p.profile_id !== null,
+      profileId: p.profile_id,
     }));
   return list.length ? list : [{ name: "?", tagged: false }];
 }
@@ -102,18 +104,20 @@ function resultFor(match: MatchData, side: "A" | "B"): "win" | "loss" | "draw" {
   return match.winner_side === side ? "win" : "loss";
 }
 
-function Panel({
+export function Panel({
   players,
   result,
   colorResult = result,
   mode,
   align,
+  linkNames = false,
 }: {
   players: SidePlayer[];
   result: "win" | "loss" | "draw";
   colorResult?: "win" | "loss" | "draw";
   mode: Mode;
   align: "left" | "right";
+  linkNames?: boolean;
 }) {
   const colors =
     colorResult === "win"
@@ -122,7 +126,6 @@ function Panel({
         ? PANEL_COLORS.loss
         : PANEL_COLORS.draw;
 
-  const label = result === "win" ? "Victoire" : result === "loss" ? "Défaite" : "Nul";
   const multi = players.length > 1;
   // const avatarSize = multi
   //   ? "size-5 text-[10px] sm:size-6 sm:text-[11px]"
@@ -133,14 +136,14 @@ function Panel({
 
   return (
     <div className={`${colors.bg} rounded-lg px-2 py-1.5 sm:px-2.5 sm:py-2 relative flex flex-col justify-center`}>
-      <span
-        className={`absolute top-1.5 sm:top-2 ${align === "right" ? "right-2 sm:right-2.5 text-right" : "left-2 sm:left-2.5"} text-[9px] sm:text-[10px] font-semibold uppercase tracking-[0.1em] ${colors.label} opacity-70`}
-      >
-        {label}
-      </span>
+      {result === "win" && (
+        <Trophy
+          className={`absolute top-1.5 sm:top-2 ${align === "right" ? "right-2 sm:right-2.5" : "left-2 sm:left-2.5"} size-3 sm:size-3.5 ${colors.label} opacity-70`}
+        />
+      )}
 
       <div className={`flex flex-col gap-1 sm:gap-1.5 ${namesNearVs}`}>
-        {players.map(({ name, tagged }) => (
+        {players.map(({ name, tagged, profileId }) => (
           <div
             key={name}
             className={`flex items-center gap-1.5 ${align === "right" ? "flex-row-reverse" : ""}`}
@@ -152,7 +155,14 @@ function Panel({
               {initials(name)}
             </div>
             */}
-            {tagged ? (
+            {tagged && linkNames && profileId ? (
+              <Link
+                href={`/joueurs/${profileId}`}
+                className={`${nameSize} font-semibold ${colors.name} leading-tight hover:underline`}
+              >
+                {name}
+              </Link>
+            ) : tagged ? (
               <strong className={`${nameSize} font-semibold ${colors.name} leading-tight`}>
                 {name}
               </strong>

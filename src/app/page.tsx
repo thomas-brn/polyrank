@@ -11,7 +11,7 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-accent p-8 pb-4 text-white md:flex-row md:items-center md:justify-between md:gap-6 md:pb-8">
+      <section className="flex flex-col gap-4 rounded-2xl bg-gradient-to-br from-brand-600 to-brand-accent p-6 pb-3 text-white md:flex-row md:items-center md:justify-between md:gap-6 md:pb-6">
         <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight">
             Poly<span className="text-brand-100">Rank</span>

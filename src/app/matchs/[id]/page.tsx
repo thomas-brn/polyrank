@@ -1,10 +1,10 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { AlertCircle, ArrowLeft, Calendar, Clock, Flag, MapPin, Pencil, School, Trash2, User } from "lucide-react";
+import { AlertCircle, ArrowLeft, Calendar, Clock, Flag, MapPin, Pencil, Trash2 } from "lucide-react";
 
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { PANEL_COLORS, STATUS } from "@/components/match-card";
+import { Panel, sidePlayers } from "@/components/match-card";
 import { ANNEE_LABELS } from "@/lib/constants";
 import type { Mode } from "@/lib/mode";
 import { deleteMatch } from "./modifier/actions";
@@ -87,94 +87,27 @@ type DetailMatchRow = {
 //   return name.slice(0, 2).toUpperCase();
 // }
 
-type EloLine = { label: string; delta: number };
+type EloLine = { label: string; before: number; delta: number };
 
 function formatEloDelta(delta: number): string {
   const rounded = Math.round(delta);
-  return `${rounded > 0 ? "+" : ""}${rounded}`;
+  if (rounded > 0) return `+ ${rounded}`;
+  if (rounded < 0) return `- ${Math.abs(rounded)}`;
+  return `${rounded}`;
 }
 
-function SidePanel({
-  participants,
-  result,
-  mode,
-  align,
-  eloLines,
-}: {
-  participants: DetailParticipant[];
-  result: "win" | "loss" | "draw";
-  mode: Mode;
-  align: "left" | "right";
-  eloLines?: EloLine[];
-}) {
-  const colors =
-    result === "win"
-      ? PANEL_COLORS.win[mode]
-      : result === "loss"
-        ? PANEL_COLORS.loss
-        : PANEL_COLORS.draw;
-  const label =
-    result === "win" ? "Victoire" : result === "loss" ? "Défaite" : "Nul";
-  const multi = participants.length > 1;
-  // const avatarSize = multi ? "size-5 text-[10px]" : "size-6 text-[11px]";
-  const nameSize = multi ? "text-[12px]" : "text-[13px]";
-
+function EloDeltaList({ lines }: { lines: EloLine[] }) {
+  if (lines.length === 0) return null;
   return (
-    <div
-      className={`${colors.bg} rounded-lg px-2 py-1.5 flex flex-col gap-1 justify-center`}
-    >
-      <div
-        className={`flex flex-col gap-1 ${align === "right" ? "items-end" : "items-start"}`}
-      >
-        {participants.map((p) => {
-          const name = p.profiles?.pseudo ?? p.guest_name ?? "?";
-          return (
-            <div
-              key={p.profile_id ?? p.guest_name}
-              className={`flex items-center gap-1.5 ${align === "right" ? "flex-row-reverse" : ""}`}
-            >
-              {/* TODO: photos de profil
-              <div
-                className={`${avatarSize} rounded-full bg-white border-[1.5px] ${colors.avatar} flex items-center justify-center font-medium shrink-0`}
-              >
-                {initials(name)}
-              </div>
-              */}
-              {p.profile_id ? (
-                <Link
-                  href={`/joueurs/${p.profile_id}`}
-                  className={`${nameSize} font-semibold ${colors.name} leading-tight hover:underline`}
-                >
-                  {name}
-                </Link>
-              ) : (
-                <em
-                  className={`${nameSize} font-normal ${colors.name} leading-tight opacity-70`}
-                >
-                  {name}
-                </em>
-              )}
-            </div>
-          );
-        })}
-      </div>
-      <span
-        className={`text-[9px] font-semibold uppercase tracking-[0.1em] ${colors.label} opacity-70 ${align === "right" ? "text-right" : ""}`}
-      >
-        {label}
-      </span>
-      {eloLines && eloLines.length > 0 && (
-        <div className={`flex flex-col gap-px ${align === "right" ? "items-end" : "items-start"}`}>
-          {eloLines.map(({ label: lineLabel, delta }) => (
-            <span
-              key={lineLabel}
-              className={`text-[10px] font-semibold tabular-nums ${delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-500" : "text-slate-400"}`}
-            >
-              {formatEloDelta(delta)} Elo {lineLabel}
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="mt-1 flex flex-col gap-0.5">
+      {lines.map(({ label, before, delta }) => (
+        <span key={label} className="text-xs font-medium tabular-nums text-slate-500">
+          Elo {label} : {Math.round(before)}{" "}
+          <span className={delta > 0 ? "text-emerald-600" : delta < 0 ? "text-rose-500" : "text-slate-400"}>
+            {formatEloDelta(delta)}
+          </span>
+        </span>
+      ))}
     </div>
   );
 }
@@ -303,11 +236,6 @@ export default async function MatchDetailPage({
     }
   }
 
-  const status = STATUS[match.status] ?? {
-    label: match.status,
-    className: "bg-slate-100 text-slate-600",
-  };
-
   const dt = new Date(match.played_at);
   const date = dt.toLocaleDateString("fr-FR", {
     day: "2-digit",
@@ -323,42 +251,26 @@ export default async function MatchDetailPage({
     .filter((p) => p.profile_id !== null)
     .map((p) => p.profile_id as string);
 
-  // Match counts for CoinCoin player detail
-  const matchCounts = new Map<string, number>();
-  if (!isFifa && profileIds.length > 0) {
-    const { data: allParts } = await supabase
-      .from("match_participants")
-      .select("profile_id")
-      .in("profile_id", profileIds);
-    for (const row of allParts ?? []) {
-      if (row.profile_id) {
-        matchCounts.set(
-          row.profile_id,
-          (matchCounts.get(row.profile_id) ?? 0) + 1,
-        );
-      }
-    }
-  }
-
   // --- ELO deltas ---
 
   // Helpers
   function duoKey(p1: string, p2: string) {
     return p1 < p2 ? { lo: p1, hi: p2 } : { lo: p2, hi: p1 };
   }
+  type RatingChange = { before: number; delta: number };
   function histDelta<T extends { id: number; match_id: string | null; rating: number }>(
     rows: T[],
     matchId: string,
-  ): number | undefined {
+  ): RatingChange | undefined {
     const idx = rows.findIndex((r) => r.match_id === matchId);
     if (idx === -1) return undefined;
     const after = Number(rows[idx].rating);
     const before = idx > 0 ? Number(rows[idx - 1].rating) : 1000;
-    return after - before;
+    return { before, delta: after - before };
   }
 
   // Individual GLOBAL + 1V1 deltas (rating_history)
-  const eloDeltas: Record<string, Record<string, number>> = {};
+  const eloDeltas: Record<string, Record<string, RatingChange>> = {};
   if (profileIds.length > 0) {
     const { data: history } = await supabase
       .from("rating_history")
@@ -378,10 +290,10 @@ export default async function MatchDetailPage({
         const colonIdx = key.indexOf(":");
         const profile_id = key.slice(0, colonIdx);
         const scope = key.slice(colonIdx + 1);
-        const delta = histDelta(rows, match.id);
-        if (delta === undefined) continue;
+        const change = histDelta(rows, match.id);
+        if (change === undefined) continue;
         if (!eloDeltas[profile_id]) eloDeltas[profile_id] = {};
-        eloDeltas[profile_id][scope] = delta;
+        eloDeltas[profile_id][scope] = change;
       }
     }
   }
@@ -392,8 +304,8 @@ export default async function MatchDetailPage({
   const aDuo = aLinkedIds.length === 2 ? duoKey(aLinkedIds[0], aLinkedIds[1]) : null;
   const bDuo = bLinkedIds.length === 2 ? duoKey(bLinkedIds[0], bLinkedIds[1]) : null;
 
-  let aDuoDelta: number | undefined;
-  let bDuoDelta: number | undefined;
+  let aDuoChange: RatingChange | undefined;
+  let bDuoChange: RatingChange | undefined;
 
   if (aDuo || bDuo) {
     const duoQueries = [
@@ -418,27 +330,18 @@ export default async function MatchDetailPage({
     ] as const;
 
     const [aResult, bResult] = await Promise.all(duoQueries);
-    if (aResult.data) aDuoDelta = histDelta(aResult.data, match.id);
-    if (bResult.data) bDuoDelta = histDelta(bResult.data, match.id);
+    if (aResult.data) aDuoChange = histDelta(aResult.data, match.id);
+    if (bResult.data) bDuoChange = histDelta(bResult.data, match.id);
   }
 
-  // Build EloLine arrays for each SidePanel
-  function buildEloLines(
-    linkedId: string | null,
-    duoDelta: number | undefined,
-  ): EloLine[] {
+  // Build EloLine arrays per player (global + 1v1), plus one shared "duo" line for the team
+  function buildPlayerEloLines(linkedId: string): EloLine[] {
     const lines: EloLine[] = [];
-    if (linkedId) {
-      const pd = eloDeltas[linkedId];
-      if (pd?.["GLOBAL"] !== undefined) lines.push({ label: "global", delta: pd["GLOBAL"] });
-      if (pd?.["1V1"] !== undefined) lines.push({ label: "1v1", delta: pd["1V1"] });
-    }
-    if (duoDelta !== undefined) lines.push({ label: "duo", delta: duoDelta });
+    const pd = eloDeltas[linkedId];
+    if (pd?.["GLOBAL"] !== undefined) lines.push({ label: "global", ...pd["GLOBAL"] });
+    if (pd?.["1V1"] !== undefined) lines.push({ label: "1v1", ...pd["1V1"] });
     return lines;
   }
-
-  const aEloLines = match.is_friendly ? [] : buildEloLines(aLinkedIds[0] ?? null, aDuoDelta);
-  const bEloLines = match.is_friendly ? [] : buildEloLines(bLinkedIds[0] ?? null, bDuoDelta);
 
   const boundDelete = deleteMatch.bind(null, match.id);
   const boundAccept = acceptContest.bind(null, match.id);
@@ -482,47 +385,40 @@ export default async function MatchDetailPage({
           <span className="text-[12px] font-medium tracking-[0.04em] text-slate-400 uppercase">
             {match.games?.name} · {match.format}
           </span>
-          <div className="flex items-center gap-1.5">
-            {match.is_friendly && (
-              <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[12px] font-medium text-sky-600">
-                Amical
-              </span>
-            )}
-            <span
-              className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${status.className}`}
-            >
-              {status.label}
+          {match.is_friendly && (
+            <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[12px] font-medium text-sky-600">
+              Amical
             </span>
-          </div>
+          )}
         </div>
 
         {/* Score panels */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch px-2.5 pt-2 pb-2">
-          <SidePanel
-            participants={aParticipants}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-stretch px-2.5 pt-2 pb-2 sm:px-3 sm:pt-2.5 sm:pb-2.5">
+          <Panel
+            players={sidePlayers(match.match_participants, "A")}
             result={isDraw ? "draw" : aWins ? "win" : "loss"}
             mode={mode}
             align="left"
-            eloLines={aEloLines}
+            linkNames
           />
-          <div className="flex flex-col items-center justify-center gap-1 px-2">
-            <div className="w-px flex-1 min-h-2 bg-slate-200" />
-            <span className="text-[22px] font-medium italic text-slate-400 leading-none whitespace-nowrap">
+          <div className="flex flex-col items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3">
+            <div className="w-px flex-1 min-h-2 sm:min-h-2.5 bg-slate-200" />
+            <span className="text-[22px] sm:text-[26px] font-medium italic text-slate-400 leading-none whitespace-nowrap">
               VS
             </span>
-            <div className="w-px flex-1 min-h-2 bg-slate-200" />
+            <div className="w-px flex-1 min-h-2 sm:min-h-2.5 bg-slate-200" />
           </div>
-          <SidePanel
-            participants={bParticipants}
+          <Panel
+            players={sidePlayers(match.match_participants, "B")}
             result={isDraw ? "draw" : bWins ? "win" : "loss"}
             mode={mode}
             align="right"
-            eloLines={bEloLines}
+            linkNames
           />
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-center gap-3 px-4 pb-3">
+        <div className="pb-2.5 sm:pb-3 px-3 sm:px-4 flex items-center justify-center gap-2">
           {match.location && (
             <span className="inline-flex items-center gap-1 text-[11px] text-slate-400">
               <MapPin className="size-3" />
@@ -625,132 +521,80 @@ export default async function MatchDetailPage({
         </div>
       ) : null}
 
-      {/* Actions du créateur (gelées si contesté ou en appel) */}
-      {isCreator && match.status === "VALIDE" ? (
-        <div className="flex gap-3">
-          <Link
-            href={`/matchs/${match.id}/modifier`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-          >
-            <Pencil className="size-4" />
-            Modifier
-          </Link>
-          <form action={boundDelete}>
-            <DeleteButton />
-          </form>
+      {/* Détails des joueurs (commun aux deux modes) */}
+      <div className={`rounded-xl border bg-white p-4 ${isContested ? "border-red-300" : "border-slate-200"}`}>
+        <h2 className="mb-3 text-sm font-semibold text-slate-700">Joueurs</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { side: "A" as const, players: aParticipants, wins: aWins, label: aLabel, duo: aDuo, duoChange: aDuoChange },
+            { side: "B" as const, players: bParticipants, wins: bWins, label: bLabel, duo: bDuo, duoChange: bDuoChange },
+          ].map(({ side, players, wins, label, duo, duoChange }) => {
+            const proposedWins = isContested && propChanges?.winner_side === side;
+            const proposedLoses = isContested && propChanges?.winner_side !== undefined && propChanges.winner_side !== side;
+            return (
+            <div key={side} className="flex flex-col gap-2">
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
+                Équipe {side}
+                {proposedWins && !wins && (
+                  <span className="rounded px-1 py-px text-[10px] font-semibold bg-red-100 text-red-700 normal-case tracking-normal">
+                    Proposé : Victoire
+                  </span>
+                )}
+                {proposedLoses && wins && (
+                  <span className="rounded px-1 py-px text-[10px] font-semibold bg-red-100 text-red-700 normal-case tracking-normal">
+                    Proposé : Défaite
+                  </span>
+                )}
+              </p>
+              {players.map((p) => {
+                const name = p.profiles?.pseudo ?? p.guest_name ?? "?";
+                const profile = p.profiles;
+                const ecole = profile?.schools?.name ?? null;
+                const annee = profile?.annee
+                  ? ANNEE_LABELS[profile.annee]
+                  : null;
+                const eloLines =
+                  !match.is_friendly && p.profile_id
+                    ? buildPlayerEloLines(p.profile_id)
+                    : [];
+
+                return (
+                  <div
+                    key={p.profile_id ?? p.guest_name}
+                    className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
+                  >
+                    {p.profile_id ? (
+                      <Link
+                        href={`/joueurs/${p.profile_id}`}
+                        className="text-sm font-semibold text-slate-800 hover:underline"
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      <span className="text-sm font-normal italic text-slate-500">
+                        {name}
+                      </span>
+                    )}
+                    {profile && (annee || ecole) ? (
+                      <p className="mt-1 text-xs text-slate-400">
+                        {[annee, ecole].filter(Boolean).join(" ")}
+                      </p>
+                    ) : null}
+                    <EloDeltaList lines={eloLines} />
+                  </div>
+                );
+              })}
+              {!match.is_friendly && duo && duoChange ? (
+                <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                  <span className="text-sm font-semibold text-slate-800">Duo {label}</span>
+                  <EloDeltaList lines={[{ label: "duo", ...duoChange }]} />
+                </div>
+              ) : null}
+            </div>
+            );
+          })}
         </div>
-      ) : null}
-
-
-      {/* Actions de l'adversaire tagué quand VALIDE */}
-      {isTaggedOpponent && match.status === "VALIDE" ? (
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href={`/matchs/${match.id}/contester`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-          >
-            <Flag className="size-4" />
-            Contester le résultat
-          </Link>
-          <Link
-            href={`/matchs/${match.id}/supprimer`}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
-          >
-            <Trash2 className="size-4" />
-            Demander la suppression
-          </Link>
-        </div>
-      ) : null}
-
-      {/* CoinCoin : détails des joueurs */}
-      {!isFifa ? (
-        <div className={`rounded-xl border bg-white p-4 ${isContested ? "border-red-300" : "border-slate-200"}`}>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Joueurs</h2>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { side: "A" as const, players: aParticipants, wins: aWins },
-              { side: "B" as const, players: bParticipants, wins: bWins },
-            ].map(({ side, players, wins }) => {
-              const proposedWins = isContested && propChanges?.winner_side === side;
-              const proposedLoses = isContested && propChanges?.winner_side !== undefined && propChanges.winner_side !== side;
-              return (
-              <div key={side} className="flex flex-col gap-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
-                  Équipe {side}
-                  {wins && (
-                    <span className="rounded px-1 py-px text-[10px] font-semibold bg-emerald-100 text-emerald-700 normal-case tracking-normal">
-                      Victoire
-                    </span>
-                  )}
-                  {proposedWins && !wins && (
-                    <span className="rounded px-1 py-px text-[10px] font-semibold bg-red-100 text-red-700 normal-case tracking-normal">
-                      Proposé : Victoire
-                    </span>
-                  )}
-                  {proposedLoses && wins && (
-                    <span className="rounded px-1 py-px text-[10px] font-semibold bg-red-100 text-red-700 normal-case tracking-normal">
-                      Proposé : Défaite
-                    </span>
-                  )}
-                </p>
-                {players.map((p) => {
-                  const name = p.profiles?.pseudo ?? p.guest_name ?? "?";
-                  const profile = p.profiles;
-                  const ecole = profile?.schools?.name ?? null;
-                  const annee = profile?.annee
-                    ? ANNEE_LABELS[profile.annee]
-                    : null;
-                  const count = p.profile_id
-                    ? matchCounts.get(p.profile_id)
-                    : null;
-
-                  return (
-                    <div
-                      key={p.profile_id ?? p.guest_name}
-                      className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2"
-                    >
-                      {p.profile_id ? (
-                        <Link
-                          href={`/joueurs/${p.profile_id}`}
-                          className="text-sm font-semibold text-slate-800 hover:underline"
-                        >
-                          {name}
-                        </Link>
-                      ) : (
-                        <span className="text-sm font-normal italic text-slate-500">
-                          {name}
-                        </span>
-                      )}
-                      {profile ? (
-                        <div className="mt-1 flex flex-col gap-0.5">
-                          {ecole && (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                              <School className="size-3" />
-                              {ecole}
-                            </span>
-                          )}
-                          {annee && (
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                              <User className="size-3" />
-                              {annee}
-                            </span>
-                          )}
-                          {count != null && (
-                            <span className="text-xs text-slate-400">
-                              {count} match{count > 1 ? "s" : ""}
-                            </span>
-                          )}
-                        </div>
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      </div>
 
       {/* FifaChamp : tableau de stats */}
       {isFifa ? (
@@ -829,6 +673,42 @@ export default async function MatchDetailPage({
               </div>
             );
           })}
+        </div>
+      ) : null}
+
+      {/* Actions de l'adversaire tagué quand VALIDE */}
+      {isTaggedOpponent && match.status === "VALIDE" ? (
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/matchs/${match.id}/contester`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          >
+            <Flag className="size-4" />
+            Contester le résultat
+          </Link>
+          <Link
+            href={`/matchs/${match.id}/supprimer`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          >
+            <Trash2 className="size-4" />
+            Demander la suppression
+          </Link>
+        </div>
+      ) : null}
+
+      {/* Actions du créateur (gelées si contesté ou en appel) */}
+      {isCreator && match.status === "VALIDE" ? (
+        <div className="flex gap-3">
+          <Link
+            href={`/matchs/${match.id}/modifier`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
+          >
+            <Pencil className="size-4" />
+            Modifier
+          </Link>
+          <form action={boundDelete}>
+            <DeleteButton />
+          </form>
         </div>
       ) : null}
 
