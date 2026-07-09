@@ -145,7 +145,7 @@ export function NewMatchForm({
 
       {!hasTaggedOpp ? (
         <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
-          Pour ajouter un match, au moins un des adversaires doit avoir un compte, Tague-le avec <strong>@</strong>.
+          Au moins un des adversaires doit avoir un compte.
         </p>
       ) : null}
 
