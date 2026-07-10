@@ -47,7 +47,7 @@ export function PseudoField({
       active = false;
       clearTimeout(timer);
     };
-  }, [trimmed, isEmpty, isCurrent, selfId]);
+  }, [trimmed, isEmpty, isCurrent, hasInvalidChars, isTooLong, selfId]);
 
   function handleChange(next: string) {
     setValue(next);

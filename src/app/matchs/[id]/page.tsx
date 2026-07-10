@@ -81,11 +81,6 @@ type DetailMatchRow = {
 };
 
 // TODO: photos de profil — réactiver avec Supabase Storage
-// function initials(name: string): string {
-//   const parts = name.trim().split(/[\s_-]+/);
-//   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-//   return name.slice(0, 2).toUpperCase();
-// }
 
 type EloLine = { label: string; before: number; delta: number };
 

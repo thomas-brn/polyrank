@@ -5,14 +5,14 @@ import { PageHero } from "@/components/page-hero";
 import { MatchCard, type MatchData } from "@/components/match-card";
 import { MatchFormatTabs, type MatchFormat } from "@/components/match-format-tabs";
 import { SchoolPromoFilters } from "@/components/school-promo-filters";
-import { getMode, MODES, type Mode } from "@/lib/mode";
+import { getMode, MODES } from "@/lib/mode";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
 const MATCH_SELECT =
   "id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
 
-function toValidMatchFormat(raw: string | undefined, mode: Mode): MatchFormat {
+function toValidMatchFormat(raw: string | undefined): MatchFormat {
   const valid: MatchFormat[] = ["global", "1v1", "2v2"];
   return valid.includes(raw as MatchFormat) ? (raw as MatchFormat) : "global";
 }
@@ -36,7 +36,7 @@ export default async function MatchsPage({
   const sport = MODES[mode].sport;
 
   const { format: rawFormat, school: schoolSlug, annee } = await searchParams;
-  const matchFormat = toValidMatchFormat(rawFormat, mode);
+  const matchFormat = toValidMatchFormat(rawFormat);
 
   const [{ data: game }, { data: schoolsData }] = await Promise.all([
     supabase.from("games").select("id").eq("slug", mode).single<{ id: string }>(),

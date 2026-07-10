@@ -25,20 +25,7 @@ export type MatchData = {
   match_participants: MatchParticipant[];
 };
 
-export const STATUS: Record<string, { label: string; className: string }> = {
-  VALIDE:  { label: "Validé",    className: "bg-green-100 text-green-700" },
-  CONTESTE:{ label: "Contesté",  className: "bg-red-100 text-red-700" },
-  EN_APPEL:{ label: "En appel",  className: "bg-amber-100 text-amber-700" },
-};
-
-export function sideNames(participants: MatchParticipant[], side: "A" | "B") {
-  const list = participants
-    .filter((p) => p.side === side)
-    .map((p) => p.profiles?.pseudo ?? p.guest_name ?? "?");
-  return list.length ? list.join(" & ") : "?";
-}
-
-export type SidePlayer = { name: string; tagged: boolean; profileId?: string | null };
+type SidePlayer = { name: string; tagged: boolean; profileId?: string | null };
 
 export function sidePlayers(participants: MatchParticipant[], side: "A" | "B"): SidePlayer[] {
   const list = participants
@@ -52,13 +39,8 @@ export function sidePlayers(participants: MatchParticipant[], side: "A" | "B"): 
 }
 
 // TODO: photos de profil — réactiver avec Supabase Storage
-// function initials(name: string): string {
-//   const parts = name.trim().split(/[\s_-]+/);
-//   if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-//   return name.slice(0, 2).toUpperCase();
-// }
 
-export const PANEL_COLORS = {
+const PANEL_COLORS = {
   win: {
     coincoin: {
       bg: "bg-green-100",
@@ -90,7 +72,7 @@ export const PANEL_COLORS = {
 // Match cell background for the personal history view (/profil): a shade darker
 // than PANEL_COLORS so the inner team panels read as a lighter tint of the same hue.
 // `border`/`vsText`/`vsBar` are a further shade darker, for the cell outline and the VS divider.
-export const CARD_COLORS = {
+const CARD_COLORS = {
   win: {
     coincoin: { bg: "bg-green-200", hoverBg: "hover:bg-green-300", border: "border-green-300", vsText: "text-green-700", vsBar: "bg-green-400" },
     fifachamp: { bg: "bg-blue-200", hoverBg: "hover:bg-blue-300", border: "border-blue-300", vsText: "text-blue-700", vsBar: "bg-blue-400" },
@@ -127,9 +109,6 @@ export function Panel({
         : PANEL_COLORS.draw;
 
   const multi = players.length > 1;
-  // const avatarSize = multi
-  //   ? "size-5 text-[10px] sm:size-6 sm:text-[11px]"
-  //   : "size-6 text-[11px] sm:size-7 sm:text-[12px]";
   const nameSize = multi ? "text-[12px] sm:text-[14px]" : "text-[13px] sm:text-[15px]";
   // Names sit next to the VS divider: right-aligned in the left cell, left-aligned in the right cell.
   const namesNearVs = align === "left" ? "items-end" : "items-start";
@@ -206,9 +185,6 @@ function CardInner({
         : CARD_COLORS.draw
     : null;
   const infoTextClass = vsColors?.vsText ?? "text-slate-400";
-
-  const leftScore = leftSide === "A" ? match.score_a : match.score_b;
-  const rightScore = leftSide === "A" ? match.score_b : match.score_a;
 
   const dt = new Date(match.played_at);
   const date = dt.toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });

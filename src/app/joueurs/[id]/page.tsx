@@ -39,7 +39,7 @@ function toValidPeriod(raw: string | undefined): Period {
     : "all";
 }
 
-function toValidMatchFormat(raw: string | undefined, mode: Mode): MatchFormat {
+function toValidMatchFormat(raw: string | undefined): MatchFormat {
   const valid: MatchFormat[] = ["global", "1v1", "2v2"];
   return valid.includes(raw as MatchFormat) ? (raw as MatchFormat) : "global";
 }
@@ -87,7 +87,7 @@ export default async function JoueurPage({
   }
 
   const mode = await getMode();
-  const matchFormat = toValidMatchFormat(rawFormat, mode);
+  const matchFormat = toValidMatchFormat(rawFormat);
   const ecoleLabel = profile.schools?.name ?? "-";
   const anneeLabel = profile.annee ? ANNEE_LABELS[profile.annee] : null;
   const basePath = `/joueurs/${id}`;

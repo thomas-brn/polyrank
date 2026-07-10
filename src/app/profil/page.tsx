@@ -36,7 +36,7 @@ function toValidPeriod(raw: string | undefined): Period {
     : "all";
 }
 
-function toValidMatchFormat(raw: string | undefined, mode: Mode): MatchFormat {
+function toValidMatchFormat(raw: string | undefined): MatchFormat {
   const valid: MatchFormat[] = ["global", "1v1", "2v2"];
   return valid.includes(raw as MatchFormat) ? (raw as MatchFormat) : "global";
 }
@@ -132,7 +132,7 @@ export default async function ProfilPage({
   const { period: rawPeriod, duo: duoPartnerId, format: rawFormat } = await searchParams;
   const period = toValidPeriod(rawPeriod);
   const mode = await getMode();
-  const matchFormat = toValidMatchFormat(rawFormat, mode);
+  const matchFormat = toValidMatchFormat(rawFormat);
   const ecoleLabel = profile.schools?.name ?? "-";
   const anneeLabel = profile.annee ? ANNEE_LABELS[profile.annee] : null;
 
@@ -243,7 +243,6 @@ async function EloSection({
   duoPartnerId?: string;
 }) {
   const supabase = await createClient();
-  const sport = MODES[mode].sport;
 
   const { data: game } = await supabase
     .from("games")
@@ -310,11 +309,6 @@ async function EloSection({
     .in("id", uniquePartnerIds)
     .returns<{ id: string; pseudo: string | null }[]>();
   const pseudoMap = Object.fromEntries((partnerProfiles ?? []).map((p) => [p.id, p.pseudo ?? "?"]));
-
-  const duoPartners = allDuos.map((d) => {
-    const pid = d.profile_lo === userId ? d.profile_hi : d.profile_lo;
-    return { id: pid, pseudo: pseudoMap[pid] ?? "?", rating: d.rating };
-  });
 
   const targetPartnerId = duoPartnerId && uniquePartnerIds.includes(duoPartnerId) ? duoPartnerId : null;
   const chosenDuo = targetPartnerId

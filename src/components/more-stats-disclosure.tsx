@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 /**
  * Remplace un <details>/<summary> natif : sur mobile Safari, l'ouverture

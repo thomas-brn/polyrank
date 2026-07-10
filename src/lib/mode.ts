@@ -8,7 +8,7 @@ import { cookies } from "next/headers";
 export type Mode = "fifachamp" | "coincoin";
 
 export const MODE_COOKIE = "polyrank-mode";
-export const DEFAULT_MODE: Mode = "fifachamp";
+const DEFAULT_MODE: Mode = "fifachamp";
 
 export const MODES: Record<
   Mode,
@@ -18,7 +18,7 @@ export const MODES: Record<
   coincoin: { slug: "coincoin", sport: "CoinCoin", icon: "beer" },
 };
 
-export function isMode(value: string | undefined): value is Mode {
+function isMode(value: string | undefined): value is Mode {
   return value === "fifachamp" || value === "coincoin";
 }
 
