@@ -207,7 +207,7 @@ export default async function ClassementPage({
         })
         .sort((a, b) => b.eloPondere - a.eloPondere || a.ville.localeCompare(b.ville));
     } else if (scope === "2V2") {
-      let q = supabase
+      const q = supabase
         .from("duo_ratings")
         .select("profile_lo, profile_hi, rating, played, won, lost")
         .eq("game_id", game.id)
