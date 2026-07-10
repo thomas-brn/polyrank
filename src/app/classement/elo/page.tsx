@@ -10,7 +10,7 @@ export default async function EloPage() {
   const sport = MODES[mode].sport;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <PageHero
         title="Fonctionnement des classements"
         description={`Le système de points qui classe les joueurs ${sport}.`}

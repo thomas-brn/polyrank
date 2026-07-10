@@ -47,7 +47,7 @@ export default async function NouveauMatchPage() {
     .order("name");
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       <PageHero
         title={`Nouveau match de ${sport}`}
         description="Ajoute un match à ton historique."

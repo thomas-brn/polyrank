@@ -45,7 +45,7 @@ export default async function RootLayout({
         suppressHydrationWarning
       >
         <SideNav />
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-6 pb-24 md:pb-12 md:pl-24 lg:pl-4">
+        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-4 pb-24 md:pb-12 md:pl-24 lg:pl-4">
           {children}
         </main>
         <BottomNav />

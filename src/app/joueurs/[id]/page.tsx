@@ -121,7 +121,7 @@ export default async function JoueurPage({
 
   return (
     <div>
-      <div className="mb-2">
+      <div className="mb-1">
         <PageHero title={profile.pseudo}>
           <dl className="mt-3 flex flex-col gap-1 text-sm text-brand-50">
             <div className="flex items-center gap-2">

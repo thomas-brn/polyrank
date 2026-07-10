@@ -159,7 +159,7 @@ export default async function ProfilPage({
   return (
     <div>
       {/* Hero */}
-      <div className="mb-2">
+      <div className="mb-1">
         <PageHero
           title={profile.pseudo}
           description={user.email ?? undefined}
