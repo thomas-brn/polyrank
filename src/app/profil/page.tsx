@@ -458,17 +458,17 @@ async function PeriodStats({
   return (
     <section>
       <div className="flex overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="flex flex-1 flex-col items-center py-3">
+        <div className="flex flex-1 flex-col items-center px-2 py-3 text-center">
           <span className="text-xl font-bold text-slate-800">{played}</span>
           <span className="text-[11px] text-slate-400">Matchs</span>
         </div>
         <div className="w-px self-stretch bg-slate-100" />
-        <div className="flex flex-1 flex-col items-center py-3">
+        <div className="flex flex-1 flex-col items-center px-2 py-3 text-center">
           <span className="text-xl font-bold text-slate-800">{wins}</span>
           <span className="text-[11px] text-slate-400">Victoires</span>
         </div>
         <div className="w-px self-stretch bg-slate-100" />
-        <div className="flex flex-1 flex-col items-center py-3">
+        <div className="flex flex-1 flex-col items-center px-2 py-3 text-center">
           <span className="text-xl font-bold text-slate-800">
             {winrate != null ? `${winrate}%` : "—"}
           </span>
@@ -778,7 +778,7 @@ async function DetailedStats({
         <div className="rounded-xl border border-slate-200 bg-white">
           <div className="grid grid-cols-3 divide-x divide-slate-100">
             <FreqStat align="start" label="Partenaire" tooltip="Le joueur avec lequel tu as le plus joué pendant cette période" name={topPartner?.label ?? null} count={topPartner?.count ?? null} unit="matchs" />
-            <FreqStat align="center" label="Rival" tooltip="Le joueur contre qui tu as le plus joué pendant cette période" name={topOpponent.label} count={topOpponent.count} unit="confrontations" />
+            <FreqStat align="center" label="Rival" tooltip="Le joueur contre qui tu as le plus joué pendant cette période" name={topOpponent.label} count={topOpponent.count} unit="matchs" />
             <FreqStat align="end" label="Duo rival" tooltip="Le duo contre lequel tu as le plus joué pendant cette période" name={topOpponentDuo?.label ?? null} count={topOpponentDuo?.count ?? null} unit="matchs" />
           </div>
         </div>
@@ -827,7 +827,7 @@ function EloCard({ title, sub, rating, rank }: { title: string; sub?: string; ra
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center py-3">
+    <div className="flex flex-1 flex-col items-center px-2 py-3 text-center">
       <span className="text-base font-bold text-slate-800">{value}</span>
       <span className="text-[11px] text-slate-400">{label}</span>
     </div>

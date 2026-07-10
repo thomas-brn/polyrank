@@ -106,14 +106,14 @@ export default async function HomePage() {
       <PlayerSearch />
 
       {stats ? (
-        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-5">
+        <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-6 pt-4">
           <h2 className="text-sm font-semibold text-slate-500">
-            {sport} en ce moment
+            {sport} en quelques chiffres
           </h2>
           <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <StatTile label="Matchs (30j)" value={stats.matches30d} />
-            <StatTile label="Joueurs actifs (30j)" value={stats.activePlayers30d} />
-            <StatTile label="Écoles actives (30j)" value={stats.schoolsActive30d} />
+            <StatTile label="Matchs ce mois" value={stats.matches30d} />
+            <StatTile label="Joueurs actifs ce mois" value={stats.activePlayers30d} />
+            <StatTile label="Écoles actives ce mois" value={stats.schoolsActive30d} />
             <StatTile label="Matchs au total" value={stats.totalMatches} />
           </div>
         </section>
