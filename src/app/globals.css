@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+
+  /* Thème de marque — par défaut « manette / FifaChamp » (bleu). */
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-accent: #4f46e5; /* indigo-600, fin du dégradé */
+}
+
+/* Mode « bière / CoinCoin » : la marque passe au vert (emerald/teal). */
+[data-mode="coincoin"] {
+  --brand-50: #ecfdf5;
+  --brand-100: #d1fae5;
+  --brand-200: #a7f3d0;
+  --brand-400: #34d399;
+  --brand-500: #10b981;
+  --brand-600: #059669;
+  --brand-700: #047857;
+  --brand-accent: #0d9488; /* teal-600 */
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-7px); }
+}
+
+@keyframes carousel-from-right {
+  from { transform: translateX(72px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes carousel-from-left {
+  from { transform: translateX(-72px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-accent: var(--brand-accent);
+
+  --animate-float: float 3s ease-in-out infinite;
+  --animate-carousel-from-right: carousel-from-right 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-carousel-from-left:  carousel-from-left  0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
