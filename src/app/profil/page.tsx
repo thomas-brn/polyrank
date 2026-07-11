@@ -789,7 +789,7 @@ async function DetailedStats({
             Évolution Elo
           </p>
           <div className="flex h-[110px] items-center justify-center">
-            <p className="text-sm text-slate-400">Sélectionne un duo pour voir l'évolution</p>
+            <p className="text-sm text-slate-400">Sélectionne un duo pour voir l&apos;évolution</p>
           </div>
         </div>
       ) : hasChart ? (

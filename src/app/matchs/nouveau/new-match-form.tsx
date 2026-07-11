@@ -272,7 +272,7 @@ export function NewMatchForm({
         {isFriendly && (
           <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-xs text-brand-700">
             <Info className="mt-px size-3.5 shrink-0" />
-            Ce match n'influera pas le classement mais sera pris en compte dans l&apos;historique et le calcul des statistiques.
+            Ce match n&apos;influera pas le classement mais sera pris en compte dans l&apos;historique et le calcul des statistiques.
           </p>
         )}
       </div>

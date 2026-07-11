@@ -47,7 +47,7 @@ function SchoolSelect({
           </option>
         ))}
         <option value="" disabled>
-          T'es même le bienvenu si t'es pas du réseau
+          T&apos;es même le bienvenu si t&apos;es pas du réseau
         </option>
         {schools.filter((s) => s.slug === EXTE_SLUG).map((school) => (
           <option key={school.id} value={school.id}>
