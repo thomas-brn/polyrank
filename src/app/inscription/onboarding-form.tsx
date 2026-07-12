@@ -6,14 +6,20 @@ import { useRouter } from "next/navigation";
 import { useCooldown } from "@/lib/use-cooldown";
 
 import { PseudoField } from "@/components/pseudo-field";
-import { ANNEES, EXTE_SLUG } from "@/lib/constants";
+import { ANNEE_VALUES, ANNEES, EXTE_SLUG } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/client";
 import { completeProfile, type OnboardingState } from "./actions";
 
 type School = { id: string; name: string; slug: string };
-type LegacyPlayer = { id: string; pseudo: string; ville: string | null };
+type LegacyPlayer = {
+  id: string;
+  pseudo: string;
+  ville: string | null;
+  isExte: boolean;
+};
 type Step = "profil" | "email" | "code";
 type Mode = "choose" | "new" | "claim";
+const PSEUDO_RE = /^[a-zA-Z0-9À-ɏ_-]+$/;
 
 const inputClass =
   "mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200";
@@ -228,10 +234,14 @@ function ClaimFlow({
   onBack: () => void;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<"list" | "email" | "code">("list");
+  const [step, setStep] = useState<"list" | "details" | "email" | "code">(
+    "list",
+  );
   const [query, setQuery] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [selected, setSelected] = useState<LegacyPlayer | null>(null);
+  const [pseudoOverride, setPseudoOverride] = useState("");
+  const [annee, setAnnee] = useState("");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -244,6 +254,11 @@ function ClaimFlow({
         p.pseudo.toLowerCase().includes(query.trim().toLowerCase()),
       )
     : legacyPlayers;
+
+  // Le sheet Champish n'imposait pas de limite de pseudo et ne renseignait
+  // jamais l'année : on les redemande donc à la réclamation si besoin.
+  const pseudoTooLong = (selected?.pseudo.trim().length ?? 0) > 15;
+  const needsAnnee = selected != null && !selected.isExte;
 
   async function sendCode() {
     setError(null);
@@ -316,16 +331,43 @@ function ClaimFlow({
 
     const { error: claimError } = await supabase.rpc("claim_legacy_profile", {
       p_legacy_id: selected.id,
+      p_pseudo: pseudoOverride || null,
+      p_annee: annee || null,
     });
     if (claimError) {
       setLoading(false);
       setError(
-        "Ce joueur a peut-être déjà été réclamé. Contacte @bdbleu sur Insta si le souci persiste.",
+        claimError.code === "23505"
+          ? "Ce pseudo est déjà pris. Retourne à l'étape précédente."
+          : "Ce joueur a peut-être déjà été réclamé. Contacte @bdbleu sur Insta si le souci persiste.",
       );
       return;
     }
     router.push("/profil");
     router.refresh();
+  }
+
+  function handleDetailsSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    if (pseudoTooLong) {
+      const p = String(fd.get("pseudo") ?? "").trim();
+      if (p.length < 2 || p.length > 15 || !PSEUDO_RE.test(p)) {
+        setError("Choisis un pseudo valide (2 à 15 caractères).");
+        return;
+      }
+      setPseudoOverride(p);
+    }
+    if (needsAnnee) {
+      const a = String(fd.get("annee") ?? "");
+      if (!ANNEE_VALUES.includes(a)) {
+        setError("Choisis ton année.");
+        return;
+      }
+      setAnnee(a);
+    }
+    setError(null);
+    setStep("email");
   }
 
   if (step === "code") {
@@ -348,6 +390,51 @@ function ClaimFlow({
         cooldown={cooldown}
         resent={resent}
       />
+    );
+  }
+
+  if (step === "details") {
+    return (
+      <form
+        onSubmit={handleDetailsSubmit}
+        className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-6"
+      >
+        <p className="text-sm text-slate-600">
+          Encore un détail avant de lier <strong>{selected?.pseudo}</strong> à
+          ton compte.
+        </p>
+
+        {pseudoTooLong && (
+          <div>
+            <PseudoField selfId={null} />
+            <p className="mt-1 text-xs text-amber-600">
+              Ton ancien pseudo faisait plus de 15 caractères, choisis-en un
+              nouveau.
+            </p>
+          </div>
+        )}
+
+        {needsAnnee && <AnneeSelect />}
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-700"
+        >
+          Continuer
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setStep("list");
+            setError(null);
+          }}
+          className="text-center text-xs text-slate-500 hover:underline"
+        >
+          Retour
+        </button>
+      </form>
     );
   }
 
@@ -428,7 +515,13 @@ function ClaimFlow({
                   type="button"
                   onClick={() => {
                     setSelected(p);
-                    setStep("email");
+                    setPseudoOverride("");
+                    setAnnee("");
+                    setStep(
+                      p.pseudo.trim().length > 15 || !p.isExte
+                        ? "details"
+                        : "email",
+                    );
                   }}
                   className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-slate-50"
                 >
