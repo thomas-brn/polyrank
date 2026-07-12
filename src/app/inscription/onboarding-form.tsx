@@ -336,10 +336,18 @@ function ClaimFlow({
     });
     if (claimError) {
       setLoading(false);
+      // Le message exact du RPC (ou de PostgREST) est affiché : "déjà réclamé"
+      // ne doit s'afficher que si c'est vraiment ce que la base a répondu,
+      // pas comme fourre-tout pour n'importe quelle erreur (ex. RPC introuvable
+      // après une migration non déployée), sinon le vrai problème est invisible.
+      console.error("claim_legacy_profile error:", claimError);
+      const msg = claimError.message ?? "";
       setError(
         claimError.code === "23505"
           ? "Ce pseudo est déjà pris. Retourne à l'étape précédente."
-          : "Ce joueur a peut-être déjà été réclamé. Contacte @bdbleu sur Insta si le souci persiste.",
+          : msg
+            ? `${msg} Si le souci persiste, contacte @bdbleu sur Insta.`
+            : "Erreur inattendue. Si le souci persiste, contacte @bdbleu sur Insta.",
       );
       return;
     }
