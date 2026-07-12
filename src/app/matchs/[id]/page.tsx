@@ -387,7 +387,7 @@ export default async function MatchDetailPage({
           </span>
           {match.is_friendly && (
             <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-[12px] font-medium text-sky-600">
-              Amical
+              Match amical
             </span>
           )}
         </div>
