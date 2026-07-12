@@ -33,6 +33,14 @@ export default async function InscriptionPage() {
     .select("id, name, slug")
     .order("name");
 
+  // Joueurs importés du Google Sheet Champish, sans compte, réclamables.
+  const { data: legacyPlayers } = await supabase
+    .from("profiles")
+    .select("id, pseudo, school:schools(name)")
+    .eq("is_legacy", true)
+    .not("pseudo", "is", null)
+    .order("pseudo");
+
   return (
     <div className="mx-auto max-w-md">
       <PageHeader
@@ -43,6 +51,13 @@ export default async function InscriptionPage() {
         schools={schools ?? []}
         selfId={user?.id ?? null}
         isAuthenticated={!!user}
+        legacyPlayers={(legacyPlayers ?? []).map((p) => ({
+          id: p.id as string,
+          pseudo: p.pseudo as string,
+          ville:
+            (Array.isArray(p.school) ? p.school[0]?.name : (p.school as { name: string } | null)?.name) ??
+            null,
+        }))}
       />
       {user && (
         <div className="mt-4 flex justify-center">
