@@ -393,22 +393,23 @@ async function PeriodStats({
     .eq("slug", mode)
     .single<{ id: string }>();
 
-  // Jointure depuis match_participants (indexé sur profile_id) plutôt qu'un
-  // .in("id", ...) sur matches : évite une URL énorme pour les joueurs avec
-  // beaucoup de matchs (ex. import legacy), qui échouait silencieusement.
+  // matches reste la table principale ; le filtre "au moins un participant =
+  // userId" passe par un embed !inner aliasé plutôt qu'un .in("id", ...) :
+  // évite une URL énorme pour les joueurs avec beaucoup de matchs (ex.
+  // import legacy), qui échouait silencieusement.
   let periodData: MatchStat[] = [];
   if (game && (duoMatchIds === null || duoMatchIds.length > 0)) {
     let q = supabase
-      .from("match_participants")
-      .select("matches!inner(winner_side, stats, match_participants(side, profile_id))")
-      .eq("profile_id", userId)
-      .eq("matches.game_id", game.id);
-    if (duoMatchIds !== null) q = q.in("match_id", duoMatchIds);
-    if (matchFormat === "1v1") q = q.eq("matches.format", "1V1");
-    if (matchFormat === "2v2") q = q.eq("matches.format", "2V2");
-    if (dateFrom) q = q.gte("matches.played_at", dateFrom);
-    const { data } = await q.returns<{ matches: MatchStat }[]>();
-    periodData = (data ?? []).map((r) => r.matches);
+      .from("matches")
+      .select("winner_side, stats, match_participants(side, profile_id), me:match_participants!inner(profile_id)")
+      .eq("game_id", game.id)
+      .eq("me.profile_id", userId);
+    if (duoMatchIds !== null) q = q.in("id", duoMatchIds);
+    if (matchFormat === "1v1") q = q.eq("format", "1V1");
+    if (matchFormat === "2v2") q = q.eq("format", "2V2");
+    if (dateFrom) q = q.gte("played_at", dateFrom);
+    const { data } = await q.returns<MatchStat[]>();
+    periodData = data ?? [];
   }
 
   const played = periodData.length;
@@ -467,25 +468,27 @@ async function MatchHistory({
     .eq("slug", mode)
     .single<{ id: string }>();
 
-  // Jointure depuis match_participants (indexé sur profile_id) plutôt qu'un
-  // .in("id", ...) sur matches : évite une URL énorme pour les joueurs avec
-  // beaucoup de matchs (ex. import legacy), qui échouait silencieusement.
+  // matches reste la table principale (tri par ses propres colonnes) ; le
+  // filtre "au moins un participant = userId" passe par un embed !inner
+  // aliasé plutôt qu'un .in("id", ...) : évite une URL énorme pour les
+  // joueurs avec beaucoup de matchs (ex. import legacy), qui échouait
+  // silencieusement (et, tenté via foreignTable, ne triait pas les lignes).
   let raw: MatchData[] = [];
   if (game && (duoMatchIds === null || duoMatchIds.length > 0)) {
     let mq = supabase
-      .from("match_participants")
-      .select(`matches!inner(${MATCH_SELECT})`)
-      .eq("profile_id", userId)
-      .eq("matches.game_id", game.id)
-      .order("status", { foreignTable: "matches", ascending: true })
-      .order("played_at", { foreignTable: "matches", ascending: false })
+      .from("matches")
+      .select(`${MATCH_SELECT}, me:match_participants!inner(profile_id)`)
+      .eq("game_id", game.id)
+      .eq("me.profile_id", userId)
+      .order("status", { ascending: true })
+      .order("played_at", { ascending: false })
       .range(0, 20);
-    if (duoMatchIds !== null) mq = mq.in("match_id", duoMatchIds);
-    if (matchFormat === "1v1") mq = mq.eq("matches.format", "1V1");
-    if (matchFormat === "2v2") mq = mq.eq("matches.format", "2V2");
-    if (dateFrom) mq = mq.gte("matches.played_at", dateFrom);
-    const { data } = await mq.returns<{ matches: MatchData }[]>();
-    raw = (data ?? []).map((r) => r.matches);
+    if (duoMatchIds !== null) mq = mq.in("id", duoMatchIds);
+    if (matchFormat === "1v1") mq = mq.eq("format", "1V1");
+    if (matchFormat === "2v2") mq = mq.eq("format", "2V2");
+    if (dateFrom) mq = mq.gte("played_at", dateFrom);
+    const { data } = await mq.returns<MatchData[]>();
+    raw = data ?? [];
   }
 
   const hasMore = raw.length > 20;
@@ -557,24 +560,25 @@ async function DetailedStats({
   const historyBounded = duoMatchIds === null || duoMatchIds.length > 0;
 
   // ── FIFA stats ────────────────────────────────────────────────────────────
-  // Jointure depuis match_participants (indexé sur profile_id) plutôt qu'un
-  // .in("id", ...) sur matches : évite une URL énorme pour les joueurs avec
-  // beaucoup de matchs (ex. import legacy), qui échouait silencieusement.
+  // matches reste la table principale ; le filtre "au moins un participant =
+  // userId" passe par un embed !inner aliasé plutôt qu'un .in("id", ...) :
+  // évite une URL énorme pour les joueurs avec beaucoup de matchs (ex.
+  // import legacy), qui échouait silencieusement.
   let hasFifaStats = false;
   let avgButs = 0, avgJaunes = 0, avgRouges = 0;
   let avgBlessures = 0, avgRetournees = 0, avgCf = 0;
   if (mode === "fifachamp" && historyBounded) {
     let q = supabase
-      .from("match_participants")
-      .select("matches!inner(score_a, score_b, stats, match_participants(side, profile_id))")
-      .eq("profile_id", userId)
-      .eq("matches.game_id", game.id);
-    if (duoMatchIds !== null) q = q.in("match_id", duoMatchIds);
-    if (matchFormat === "1v1") q = q.eq("matches.format", "1V1");
-    if (matchFormat === "2v2") q = q.eq("matches.format", "2V2");
-    if (dateFrom) q = q.gte("matches.played_at", dateFrom);
-    const { data } = await q.returns<{ matches: { score_a: number | null; score_b: number | null; stats: Record<string, Record<string, number>> | null; match_participants: { side: "A" | "B"; profile_id: string | null }[] } }[]>();
-    const withStats = (data ?? []).map((r) => r.matches).filter((m) => m.stats != null);
+      .from("matches")
+      .select("score_a, score_b, stats, match_participants(side, profile_id), me:match_participants!inner(profile_id)")
+      .eq("game_id", game.id)
+      .eq("me.profile_id", userId);
+    if (duoMatchIds !== null) q = q.in("id", duoMatchIds);
+    if (matchFormat === "1v1") q = q.eq("format", "1V1");
+    if (matchFormat === "2v2") q = q.eq("format", "2V2");
+    if (dateFrom) q = q.gte("played_at", dateFrom);
+    const { data } = await q.returns<{ score_a: number | null; score_b: number | null; stats: Record<string, Record<string, number>> | null; match_participants: { side: "A" | "B"; profile_id: string | null }[] }[]>();
+    const withStats = (data ?? []).filter((m) => m.stats != null);
     hasFifaStats = withStats.length > 0;
     if (withStats.length > 0) {
       let sb = 0, sj = 0, sr = 0, sbl = 0, sret = 0, scf = 0;
@@ -614,16 +618,15 @@ async function DetailedStats({
 
   if (historyBounded) {
     let pmq = supabase
-      .from("match_participants")
-      .select("matches!inner(id, match_participants(side, profile_id, guest_name, profiles(pseudo)))")
-      .eq("profile_id", userId)
-      .eq("matches.game_id", game.id);
-    if (duoMatchIds !== null) pmq = pmq.in("match_id", duoMatchIds);
-    if (matchFormat === "1v1") pmq = pmq.eq("matches.format", "1V1");
-    if (matchFormat === "2v2") pmq = pmq.eq("matches.format", "2V2");
-    if (dateFrom) pmq = pmq.gte("matches.played_at", dateFrom);
-    const { data: periodMatchesRaw } = await pmq.returns<{ matches: MatchWithParts }[]>();
-    const periodMatches = (periodMatchesRaw ?? []).map((r) => r.matches);
+      .from("matches")
+      .select("id, match_participants(side, profile_id, guest_name, profiles(pseudo)), me:match_participants!inner(profile_id)")
+      .eq("game_id", game.id)
+      .eq("me.profile_id", userId);
+    if (duoMatchIds !== null) pmq = pmq.in("id", duoMatchIds);
+    if (matchFormat === "1v1") pmq = pmq.eq("format", "1V1");
+    if (matchFormat === "2v2") pmq = pmq.eq("format", "2V2");
+    if (dateFrom) pmq = pmq.gte("played_at", dateFrom);
+    const { data: periodMatches } = await pmq.returns<MatchWithParts[]>();
 
     const partnerCounts = new Map<string, number>();
     const opponentCounts = new Map<string, number>();
