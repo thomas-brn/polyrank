@@ -17,9 +17,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PolyRank · Classements de jeux étudiants",
+  title: "PolyRank",
   description:
     "Saisis tes résultats de matchs et suis les classements par jeu et par école.",
+  openGraph: {
+    title: "PolyRank",
+    description:
+      "Saisis tes résultats de matchs et suis les classements par jeu et par école.",
+    images: ["/apple-icon.png"],
+  },
 };
 
 export const viewport: Viewport = {
