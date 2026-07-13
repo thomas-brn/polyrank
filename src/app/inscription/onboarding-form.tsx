@@ -255,9 +255,17 @@ function ClaimFlow({
       )
     : legacyPlayers;
 
-  // Le sheet Champish n'imposait pas de limite de pseudo et ne renseignait
-  // jamais l'année : on les redemande donc à la réclamation si besoin.
-  const pseudoTooLong = (selected?.pseudo.trim().length ?? 0) > 15;
+  // Le sheet Champish n'imposait ni limite de longueur ni format de pseudo
+  // (espaces, ponctuation...) et ne renseignait jamais l'année : on les
+  // redemande donc à la réclamation si besoin. Vérifier uniquement la
+  // longueur ne suffit pas : des pseudos courts comme "Alexis jaune" ou
+  // "Antoine L" contiennent un espace et échouent quand même au format
+  // attendu (^[a-zA-Z0-9À-ɏ_-]+$) — sans ce test, l'étape "détails" est
+  // sautée et le RPC rejette le pseudo original bien plus tard, au moment
+  // de valider le code, avec un message qui ne dit pas pourquoi.
+  const pseudoInvalid =
+    selected != null &&
+    (selected.pseudo.trim().length > 15 || !PSEUDO_RE.test(selected.pseudo.trim()));
   const needsAnnee = selected != null && !selected.isExte;
 
   async function sendCode() {
@@ -358,7 +366,7 @@ function ClaimFlow({
   function handleDetailsSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    if (pseudoTooLong) {
+    if (pseudoInvalid) {
       const p = String(fd.get("pseudo") ?? "").trim();
       if (p.length < 2 || p.length > 15 || !PSEUDO_RE.test(p)) {
         setError("Choisis un pseudo valide (2 à 15 caractères).");
@@ -412,11 +420,12 @@ function ClaimFlow({
           ton compte.
         </p>
 
-        {pseudoTooLong && (
+        {pseudoInvalid && (
           <div>
             <PseudoField selfId={null} />
             <p className="mt-1 text-xs text-amber-600">
-              Ton ancien pseudo faisait plus de 15 caractères, choisis-en un
+              Ton ancien pseudo ne respecte pas le format actuel (15
+              caractères max, lettres/chiffres/-/_ uniquement), choisis-en un
               nouveau.
             </p>
           </div>
@@ -526,7 +535,9 @@ function ClaimFlow({
                     setPseudoOverride("");
                     setAnnee("");
                     setStep(
-                      p.pseudo.trim().length > 15 || !p.isExte
+                      p.pseudo.trim().length > 15 ||
+                        !PSEUDO_RE.test(p.pseudo.trim()) ||
+                        !p.isExte
                         ? "details"
                         : "email",
                     );
