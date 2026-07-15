@@ -56,6 +56,64 @@ async function rankOf(
   return (count ?? 0) + 1;
 }
 
+// PostgREST plafonne chaque requête à 1000 lignes par défaut : on pagine
+// explicitement pour récupérer tous les match_id d'un joueur, même au-delà.
+const MATCH_PARTICIPANTS_PAGE_SIZE = 1000;
+
+async function getMatchIdsForProfile(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+): Promise<string[]> {
+  const ids: string[] = [];
+  let from = 0;
+  while (true) {
+    const { data } = await supabase
+      .from("match_participants")
+      .select("match_id")
+      .eq("profile_id", profileId)
+      .range(from, from + MATCH_PARTICIPANTS_PAGE_SIZE - 1);
+    const page = data ?? [];
+    ids.push(...page.map((p: { match_id: string }) => p.match_id));
+    if (page.length < MATCH_PARTICIPANTS_PAGE_SIZE) break;
+    from += MATCH_PARTICIPANTS_PAGE_SIZE;
+  }
+  return ids;
+}
+
+async function getDuoMatchIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  partnerId: string,
+): Promise<string[]> {
+  const getSideMap = async (profileId: string) => {
+    const ids: { match_id: string; side: string }[] = [];
+    let from = 0;
+    while (true) {
+      const { data } = await supabase
+        .from("match_participants")
+        .select("match_id, side")
+        .eq("profile_id", profileId)
+        .range(from, from + MATCH_PARTICIPANTS_PAGE_SIZE - 1);
+      const page = data ?? [];
+      ids.push(...page);
+      if (page.length < MATCH_PARTICIPANTS_PAGE_SIZE) break;
+      from += MATCH_PARTICIPANTS_PAGE_SIZE;
+    }
+    return ids;
+  };
+
+  const [userParts, partnerParts] = await Promise.all([
+    getSideMap(userId),
+    getSideMap(partnerId),
+  ]);
+  const partnerSideMap = new Map<string, string>(
+    partnerParts.map((p) => [p.match_id, p.side]),
+  );
+  return userParts
+    .filter((up) => partnerSideMap.get(up.match_id) === up.side)
+    .map((up) => up.match_id);
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default async function ProfilPage({
@@ -139,16 +197,7 @@ export default async function ProfilPage({
   // Quand un partenaire duo est sélectionné sur le tab 2v2, calculer les matchs joués ensemble
   let duoMatchIds: string[] | null = null;
   if (matchFormat === "2v2" && duoPartnerId) {
-    const [{ data: userParts }, { data: partnerParts }] = await Promise.all([
-      supabase.from("match_participants").select("match_id, side").eq("profile_id", user.id),
-      supabase.from("match_participants").select("match_id, side").eq("profile_id", duoPartnerId),
-    ]);
-    const partnerSideMap = new Map<string, string>(
-      (partnerParts ?? []).map((p) => [p.match_id, p.side]),
-    );
-    duoMatchIds = (userParts ?? [])
-      .filter((up) => partnerSideMap.get(up.match_id) === up.side)
-      .map((up) => up.match_id);
+    duoMatchIds = await getDuoMatchIds(supabase, user.id, duoPartnerId);
   }
 
   // Clé Suspense pour EloSection : se recharge si format ou partenaire duo change
@@ -427,11 +476,7 @@ async function PeriodStats({
   if (duoMatchIds !== null) {
     historyIds = duoMatchIds;
   } else {
-    const { data: parts } = await supabase
-      .from("match_participants")
-      .select("match_id")
-      .eq("profile_id", userId);
-    historyIds = (parts ?? []).map((p: { match_id: string }) => p.match_id);
+    historyIds = await getMatchIdsForProfile(supabase, userId);
   }
 
   let periodData: MatchStat[] = [];
@@ -508,11 +553,7 @@ async function MatchHistory({
   if (duoMatchIds !== null) {
     historyIds = duoMatchIds;
   } else {
-    const { data: parts } = await supabase
-      .from("match_participants")
-      .select("match_id")
-      .eq("profile_id", userId);
-    historyIds = (parts ?? []).map((p: { match_id: string }) => p.match_id);
+    historyIds = await getMatchIdsForProfile(supabase, userId);
   }
 
   let raw: MatchData[] = [];
@@ -602,11 +643,7 @@ async function DetailedStats({
   if (duoMatchIds !== null) {
     historyIds = duoMatchIds;
   } else {
-    const { data: parts } = await supabase
-      .from("match_participants")
-      .select("match_id")
-      .eq("profile_id", userId);
-    historyIds = (parts ?? []).map((p: { match_id: string }) => p.match_id);
+    historyIds = await getMatchIdsForProfile(supabase, userId);
   }
 
   // ── FIFA stats ────────────────────────────────────────────────────────────
