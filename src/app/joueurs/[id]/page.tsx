@@ -397,19 +397,28 @@ async function PeriodStats({
   // userId" passe par un embed !inner aliasé plutôt qu'un .in("id", ...) :
   // évite une URL énorme pour les joueurs avec beaucoup de matchs (ex.
   // import legacy), qui échouait silencieusement.
-  let periodData: MatchStat[] = [];
+  const periodData: MatchStat[] = [];
   if (game && (duoMatchIds === null || duoMatchIds.length > 0)) {
-    let q = supabase
-      .from("matches")
-      .select("winner_side, stats, match_participants(side, profile_id), me:match_participants!inner(profile_id)")
-      .eq("game_id", game.id)
-      .eq("me.profile_id", userId);
-    if (duoMatchIds !== null) q = q.in("id", duoMatchIds);
-    if (matchFormat === "1v1") q = q.eq("format", "1V1");
-    if (matchFormat === "2v2") q = q.eq("format", "2V2");
-    if (dateFrom) q = q.gte("played_at", dateFrom);
-    const { data } = await q.returns<MatchStat[]>();
-    periodData = data ?? [];
+    // PostgREST plafonne chaque requête à 1000 lignes : on pagine pour
+    // récupérer tous les matchs (ex. joueurs avec un import legacy > 1000).
+    const PAGE_SIZE = 1000;
+    let from = 0;
+    while (true) {
+      let q = supabase
+        .from("matches")
+        .select("winner_side, stats, match_participants(side, profile_id), me:match_participants!inner(profile_id)")
+        .eq("game_id", game.id)
+        .eq("me.profile_id", userId);
+      if (duoMatchIds !== null) q = q.in("id", duoMatchIds);
+      if (matchFormat === "1v1") q = q.eq("format", "1V1");
+      if (matchFormat === "2v2") q = q.eq("format", "2V2");
+      if (dateFrom) q = q.gte("played_at", dateFrom);
+      const { data } = await q.range(from, from + PAGE_SIZE - 1).returns<MatchStat[]>();
+      const page = data ?? [];
+      periodData.push(...page);
+      if (page.length < PAGE_SIZE) break;
+      from += PAGE_SIZE;
+    }
   }
 
   const played = periodData.length;
