@@ -16,6 +16,8 @@ Futur domaine : **polyrank.fr**
 Décisions d'architecture détaillées dans [`docs/DECISIONS.md`](docs/DECISIONS.md),
 plan projet dans [`docs/plan.md`](docs/plan.md).
 
+Conventions de branches, de commits et de merge : [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
 ## Démarrage local
 
 ```bash

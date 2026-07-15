@@ -1,6 +1,6 @@
 "use client";
 
-import { X } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import type { Mode } from "@/lib/mode";
@@ -37,10 +37,13 @@ export function RulesOverlay({ mode }: { mode: Mode }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="rounded-xl border border-slate-200 bg-white p-5 text-left transition-shadow hover:shadow-sm w-full"
+        className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-sm"
       >
-        <h2 className="font-semibold">Règles du jeu</h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
+          <BookOpen size={16} className="text-brand-700" />
+          Règles du jeu
+        </h2>
+        <p className="mt-1 text-xs text-slate-500">
           Comment ça marche ? Toutes les règles expliquées.
         </p>
       </button>
