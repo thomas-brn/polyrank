@@ -80,6 +80,23 @@ async function getMatchIdsForProfile(
   return ids;
 }
 
+// Récupère toutes les lignes d'une requête paginée par blocs de 1000
+// (contournement de la limite par défaut de PostgREST sur une seule page).
+async function fetchAllInBatches<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null }>,
+): Promise<T[]> {
+  const results: T[] = [];
+  let from = 0;
+  while (true) {
+    const { data } = await fetchPage(from, from + MATCH_PARTICIPANTS_PAGE_SIZE - 1);
+    const page = data ?? [];
+    results.push(...page);
+    if (page.length < MATCH_PARTICIPANTS_PAGE_SIZE) break;
+    from += MATCH_PARTICIPANTS_PAGE_SIZE;
+  }
+  return results;
+}
+
 async function getDuoMatchIds(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
@@ -481,16 +498,17 @@ async function PeriodStats({
 
   let periodData: MatchStat[] = [];
   if (historyIds.length > 0 && game) {
-    let q = supabase
-      .from("matches")
-      .select("winner_side, stats, match_participants(side, profile_id)")
-      .eq("game_id", game.id)
-      .in("id", historyIds);
-    if (matchFormat === "1v1") q = q.eq("format", "1V1");
-    if (matchFormat === "2v2") q = q.eq("format", "2V2");
-    if (dateFrom) q = q.gte("played_at", dateFrom);
-    const { data } = await q.returns<MatchStat[]>();
-    periodData = data ?? [];
+    periodData = await fetchAllInBatches<MatchStat>((from, to) => {
+      let q = supabase
+        .from("matches")
+        .select("winner_side, stats, match_participants(side, profile_id)")
+        .eq("game_id", game.id)
+        .in("id", historyIds);
+      if (matchFormat === "1v1") q = q.eq("format", "1V1");
+      if (matchFormat === "2v2") q = q.eq("format", "2V2");
+      if (dateFrom) q = q.gte("played_at", dateFrom);
+      return q.range(from, to).returns<MatchStat[]>();
+    });
   }
 
   const played = periodData.length;
@@ -651,16 +669,18 @@ async function DetailedStats({
   let avgButs = 0, avgJaunes = 0, avgRouges = 0;
   let avgBlessures = 0, avgRetournees = 0, avgCf = 0;
   if (mode === "fifachamp" && historyIds.length > 0) {
-    let q = supabase
-      .from("matches")
-      .select("score_a, score_b, stats, match_participants(side, profile_id)")
-      .eq("game_id", game.id)
-      .in("id", historyIds);
-    if (matchFormat === "1v1") q = q.eq("format", "1V1");
-    if (matchFormat === "2v2") q = q.eq("format", "2V2");
-    if (dateFrom) q = q.gte("played_at", dateFrom);
-    const { data } = await q.returns<{ score_a: number | null; score_b: number | null; stats: Record<string, Record<string, number>> | null; match_participants: { side: "A" | "B"; profile_id: string | null }[] }[]>();
-    const withStats = (data ?? []).filter((m) => m.stats != null);
+    const data = await fetchAllInBatches<{ score_a: number | null; score_b: number | null; stats: Record<string, Record<string, number>> | null; match_participants: { side: "A" | "B"; profile_id: string | null }[] }>((from, to) => {
+      let q = supabase
+        .from("matches")
+        .select("score_a, score_b, stats, match_participants(side, profile_id)")
+        .eq("game_id", game.id)
+        .in("id", historyIds);
+      if (matchFormat === "1v1") q = q.eq("format", "1V1");
+      if (matchFormat === "2v2") q = q.eq("format", "2V2");
+      if (dateFrom) q = q.gte("played_at", dateFrom);
+      return q.range(from, to).returns<{ score_a: number | null; score_b: number | null; stats: Record<string, Record<string, number>> | null; match_participants: { side: "A" | "B"; profile_id: string | null }[] }[]>();
+    });
+    const withStats = data.filter((m) => m.stats != null);
     hasFifaStats = withStats.length > 0;
     if (withStats.length > 0) {
       let sb = 0, sj = 0, sr = 0, sbl = 0, sret = 0, scf = 0;
@@ -699,21 +719,23 @@ async function DetailedStats({
   let topOpponentDuo: { label: string; count: number } | null = null;
 
   if (historyIds.length > 0) {
-    let pmq = supabase
-      .from("matches")
-      .select("id, match_participants(side, profile_id, guest_name, profiles(pseudo))")
-      .eq("game_id", game.id)
-      .in("id", historyIds);
-    if (matchFormat === "1v1") pmq = pmq.eq("format", "1V1");
-    if (matchFormat === "2v2") pmq = pmq.eq("format", "2V2");
-    if (dateFrom) pmq = pmq.gte("played_at", dateFrom);
-    const { data: periodMatches } = await pmq.returns<MatchWithParts[]>();
+    const periodMatches = await fetchAllInBatches<MatchWithParts>((from, to) => {
+      let pmq = supabase
+        .from("matches")
+        .select("id, match_participants(side, profile_id, guest_name, profiles(pseudo))")
+        .eq("game_id", game.id)
+        .in("id", historyIds);
+      if (matchFormat === "1v1") pmq = pmq.eq("format", "1V1");
+      if (matchFormat === "2v2") pmq = pmq.eq("format", "2V2");
+      if (dateFrom) pmq = pmq.gte("played_at", dateFrom);
+      return pmq.range(from, to).returns<MatchWithParts[]>();
+    });
 
     const partnerCounts = new Map<string, number>();
     const opponentCounts = new Map<string, number>();
     const opponentDuoCounts = new Map<string, number>();
 
-    for (const match of periodMatches ?? []) {
+    for (const match of periodMatches) {
       const me = match.match_participants.find((p) => p.profile_id === userId);
       if (!me) continue;
       const sameSide = match.match_participants.filter((p) => p.side === me.side && p.profile_id !== userId);
