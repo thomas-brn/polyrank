@@ -10,8 +10,6 @@ import { createClient } from "@/lib/supabase/server";
 const SUPPORT_FORM_URL =
   "https://docs.google.com/forms/d/e/1FAIpQLSeD6zfOWPzLWnPNSUAIKehx-L73FUpHVPNgNNx66Rk5lK_vZA/viewform?usp=dialog";
 
-const UPCOMING_FEATURES = ["Tournois", "Notifications", "Classements en direct"];
-
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 type SiteStats = {
@@ -126,33 +124,21 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-        <div className="sm:flex-1">
-          <RulesOverlay mode={mode} />
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:flex-1">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
-            <Sparkles size={16} className="text-brand-700" />
-            Prochainement
-          </h2>
-          <p className="mt-1 text-xs text-slate-500">
-            {UPCOMING_FEATURES.join(" • ")}
-          </p>
-        </div>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <RulesOverlay mode={mode} className="h-full" />
 
         <a
           href={SUPPORT_FORM_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-xl border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-sm sm:flex-1"
+          className="flex h-full flex-col rounded-xl border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-sm"
         >
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
             <LifeBuoy size={16} className="text-brand-700" />
             Contacter le support
           </h2>
           <p className="mt-1 text-xs text-slate-500">
-            Une question, un bug ? Écris-nous.
+            Une suggestion, une question, un bug ? Écris-nous.
           </p>
         </a>
       </div>

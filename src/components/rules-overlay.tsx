@@ -8,7 +8,13 @@ import type { Mode } from "@/lib/mode";
 import { CoinCoinRules } from "./rules/coincoin-rules";
 import { FifaChampRules } from "./rules/fifachamp-rules";
 
-export function RulesOverlay({ mode }: { mode: Mode }) {
+export function RulesOverlay({
+  mode,
+  className,
+}: {
+  mode: Mode;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -37,11 +43,11 @@ export function RulesOverlay({ mode }: { mode: Mode }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-sm"
+        className={`w-full rounded-xl border border-slate-200 bg-white p-4 text-left transition-shadow hover:shadow-sm${className ? ` ${className}` : ""}`}
       >
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">
           <BookOpen size={16} className="text-brand-700" />
-          Règles du jeu
+          Règles du {mode === "fifachamp" ? "Fifichamp" : "CoinCoin"}
         </h2>
         <p className="mt-1 text-xs text-slate-500">
           Comment ça marche ? Toutes les règles expliquées.
@@ -63,7 +69,7 @@ export function RulesOverlay({ mode }: { mode: Mode }) {
           >
             {/* Header */}
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-100 bg-white px-5 py-4">
-              <h2 className="font-semibold text-slate-900">Règles du jeu</h2>
+              <h2 className="font-semibold text-slate-900">Règles du {mode === "fifachamp" ? "Fifichamp" : "CoinCoin"}</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
