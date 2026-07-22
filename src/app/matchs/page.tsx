@@ -8,6 +8,7 @@ import { SchoolPromoFilters } from "@/components/school-promo-filters";
 import { getMode, MODES, type Mode } from "@/lib/mode";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { getGameId, getSchools } from "@/lib/supabase/queries";
 
 const MATCH_SELECT =
   "id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
@@ -70,9 +71,7 @@ export default async function MatchsPage({
 // ─── Barre de filtres (streamée) ───────────────────────────────────────────────
 
 async function FiltersBar() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("schools").select("id, name, slug").order("name");
-  const schools = (data ?? []) as { id: string; name: string; slug: string }[];
+  const schools = await getSchools();
   return <SchoolPromoFilters schools={schools} basePath="/matchs" />;
 }
 
@@ -92,19 +91,13 @@ async function MatchesBody({
   const supabase = await createClient();
   const sport = MODES[mode].sport;
 
-  const { data: game } = await supabase
-    .from("games")
-    .select("id")
-    .eq("slug", mode)
-    .single<{ id: string }>();
-  const gameId = game?.id ?? "";
+  const gameId = (await getGameId(mode)) ?? "";
 
   // Résout school_id pour filtrage
   let filterSchoolId: string | null = null;
   if (schoolSlug) {
-    const { data: schoolsData } = await supabase.from("schools").select("id, slug");
-    filterSchoolId =
-      (schoolsData ?? []).find((s: { slug: string }) => s.slug === schoolSlug)?.id ?? null;
+    const schools = await getSchools();
+    filterSchoolId = schools.find((s) => s.slug === schoolSlug)?.id ?? null;
   }
 
   let matches: MatchData[] = [];

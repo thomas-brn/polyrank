@@ -16,6 +16,7 @@ import { getMode, MODES, type Mode } from "@/lib/mode";
 import { getDateFrom } from "@/lib/period";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { getGameId } from "@/lib/supabase/queries";
 
 const MATCH_SELECT =
   "id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
@@ -311,26 +312,22 @@ async function EloSection({
   const supabase = await createClient();
   const sport = MODES[mode].sport;
 
-  const { data: game } = await supabase
-    .from("games")
-    .select("id")
-    .eq("slug", mode)
-    .single<{ id: string }>();
+  const gameId = await getGameId(mode);
 
-  if (!game) return null;
+  if (!gameId) return null;
 
   // ── Global ────────────────────────────────────────────────────────────────
   if (matchFormat === "global") {
     const { data: prs } = await supabase
       .from("player_ratings")
       .select("scope, rating, played, won, lost")
-      .eq("game_id", game.id)
+      .eq("game_id", gameId)
       .eq("profile_id", userId)
       .eq("scope", "GLOBAL")
       .returns<RatingRow[]>();
     const eloGlobal = prs?.[0] ?? null;
     if (!eloGlobal) return null;
-    const rank = await rankOf(supabase, game.id, "GLOBAL", eloGlobal.rating);
+    const rank = await rankOf(supabase, gameId, "GLOBAL", eloGlobal.rating);
     return (
       <div className="mt-6">
         <EloCard title={`Elo Global`} rating={eloGlobal.rating} rank={rank} />
@@ -343,13 +340,13 @@ async function EloSection({
     const { data: prs } = await supabase
       .from("player_ratings")
       .select("scope, rating, played, won, lost")
-      .eq("game_id", game.id)
+      .eq("game_id", gameId)
       .eq("profile_id", userId)
       .eq("scope", "1V1")
       .returns<RatingRow[]>();
     const elo1v1 = prs?.[0] ?? null;
     if (!elo1v1) return null;
-    const rank = await rankOf(supabase, game.id, "1V1", elo1v1.rating);
+    const rank = await rankOf(supabase, gameId, "1V1", elo1v1.rating);
     return (
       <div className="mt-6">
         <EloCard title={`Elo 1v1`} rating={elo1v1.rating} rank={rank} />
@@ -361,7 +358,7 @@ async function EloSection({
   const { data: allDuos } = await supabase
     .from("duo_ratings")
     .select("profile_lo, profile_hi, rating")
-    .eq("game_id", game.id)
+    .eq("game_id", gameId)
     .or(`profile_lo.eq.${userId},profile_hi.eq.${userId}`)
     .order("rating", { ascending: false })
     .returns<{ profile_lo: string; profile_hi: string; rating: number }[]>();
@@ -392,7 +389,7 @@ async function EloSection({
   const { count } = await supabase
     .from("duo_ratings")
     .select("*", { count: "exact", head: true })
-    .eq("game_id", game.id)
+    .eq("game_id", gameId)
     .gt("rating", chosenDuo.rating);
   const rankDuo = (count ?? 0) + 1;
 
@@ -414,17 +411,13 @@ async function DuoSelectSection({
 }) {
   const supabase = await createClient();
 
-  const { data: game } = await supabase
-    .from("games")
-    .select("id")
-    .eq("slug", mode)
-    .single<{ id: string }>();
-  if (!game) return null;
+  const gameId = await getGameId(mode);
+  if (!gameId) return null;
 
   const { data: allDuos } = await supabase
     .from("duo_ratings")
     .select("profile_lo, profile_hi, rating")
-    .eq("game_id", game.id)
+    .eq("game_id", gameId)
     .or(`profile_lo.eq.${userId},profile_hi.eq.${userId}`)
     .order("rating", { ascending: false })
     .returns<{ profile_lo: string; profile_hi: string; rating: number }[]>();
@@ -483,11 +476,7 @@ async function PeriodStats({
   const supabase = await createClient();
   const dateFrom = getDateFrom(period);
 
-  const { data: game } = await supabase
-    .from("games")
-    .select("id")
-    .eq("slug", mode)
-    .single<{ id: string }>();
+  const gameId = await getGameId(mode);
 
   let historyIds: string[];
   if (duoMatchIds !== null) {
@@ -497,12 +486,12 @@ async function PeriodStats({
   }
 
   let periodData: MatchStat[] = [];
-  if (historyIds.length > 0 && game) {
+  if (historyIds.length > 0 && gameId) {
     periodData = await fetchAllInBatches<MatchStat>((from, to) => {
       let q = supabase
         .from("matches")
         .select("winner_side, stats, match_participants(side, profile_id)")
-        .eq("game_id", game.id)
+        .eq("game_id", gameId)
         .in("id", historyIds);
       if (matchFormat === "1v1") q = q.eq("format", "1V1");
       if (matchFormat === "2v2") q = q.eq("format", "2V2");
@@ -561,11 +550,7 @@ async function MatchHistory({
   const dateFrom = getDateFrom(period);
   const sport = MODES[mode].sport;
 
-  const { data: game } = await supabase
-    .from("games")
-    .select("id")
-    .eq("slug", mode)
-    .single<{ id: string }>();
+  const gameId = await getGameId(mode);
 
   let historyIds: string[];
   if (duoMatchIds !== null) {
@@ -575,11 +560,11 @@ async function MatchHistory({
   }
 
   let raw: MatchData[] = [];
-  if (historyIds.length > 0 && game) {
+  if (historyIds.length > 0 && gameId) {
     let mq = supabase
       .from("matches")
       .select(MATCH_SELECT)
-      .eq("game_id", game.id)
+      .eq("game_id", gameId)
       .in("id", historyIds)
       .order("status", { ascending: true })
       .order("played_at", { ascending: false })
@@ -649,13 +634,9 @@ async function DetailedStats({
   const supabase = await createClient();
   const dateFrom = getDateFrom(period);
 
-  const { data: game } = await supabase
-    .from("games")
-    .select("id")
-    .eq("slug", mode)
-    .single<{ id: string }>();
+  const gameId = await getGameId(mode);
 
-  if (!game) return null;
+  if (!gameId) return null;
 
   let historyIds: string[];
   if (duoMatchIds !== null) {
@@ -673,7 +654,7 @@ async function DetailedStats({
       let q = supabase
         .from("matches")
         .select("score_a, score_b, stats, match_participants(side, profile_id)")
-        .eq("game_id", game.id)
+        .eq("game_id", gameId)
         .in("id", historyIds);
       if (matchFormat === "1v1") q = q.eq("format", "1V1");
       if (matchFormat === "2v2") q = q.eq("format", "2V2");
@@ -723,7 +704,7 @@ async function DetailedStats({
       let pmq = supabase
         .from("matches")
         .select("id, match_participants(side, profile_id, guest_name, profiles(pseudo))")
-        .eq("game_id", game.id)
+        .eq("game_id", gameId)
         .in("id", historyIds);
       if (matchFormat === "1v1") pmq = pmq.eq("format", "1V1");
       if (matchFormat === "2v2") pmq = pmq.eq("format", "2V2");
@@ -773,7 +754,7 @@ async function DetailedStats({
     let hq = supabase
       .from("rating_history")
       .select("scope, rating, played_at")
-      .eq("game_id", game.id)
+      .eq("game_id", gameId)
       .eq("profile_id", userId)
       .eq("scope", scope)
       .order("played_at", { ascending: true });
@@ -787,7 +768,7 @@ async function DetailedStats({
     let dhq = supabase
       .from("duo_rating_history")
       .select("profile_lo, profile_hi, rating, played_at")
-      .eq("game_id", game.id)
+      .eq("game_id", gameId)
       .or(`profile_lo.eq.${userId},profile_hi.eq.${userId}`)
       .order("played_at", { ascending: true });
     if (dateFrom) dhq = dhq.gte("played_at", dateFrom);

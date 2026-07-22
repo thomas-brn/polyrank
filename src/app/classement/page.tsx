@@ -8,6 +8,7 @@ import { SchoolPromoFilters } from "@/components/school-promo-filters";
 import { getMode, MODES, type Mode } from "@/lib/mode";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { getGameId, getSchools } from "@/lib/supabase/queries";
 
 const DEFAULT_MIN = 5;
 
@@ -167,9 +168,7 @@ export default async function ClassementPage({
 // ─── Barre de filtres (streamée) ───────────────────────────────────────────────
 
 async function FiltersBar() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("schools").select("id, name, slug").order("name");
-  const schools = (data ?? []) as { id: string; name: string; slug: string }[];
+  const schools = await getSchools();
   return <SchoolPromoFilters schools={schools} basePath="/classement" />;
 }
 
@@ -191,17 +190,7 @@ async function RankingBody({
   const min = showAll ? 1 : DEFAULT_MIN;
   const supabase = await createClient();
 
-  const [{ data: game }, { data: schoolsData }] = await Promise.all([
-    supabase.from("games").select("id").eq("slug", mode).single<{ id: string }>(),
-    supabase.from("schools").select("id, name, slug, color").order("name"),
-  ]);
-
-  const schools = (schoolsData ?? []) as {
-    id: string;
-    name: string;
-    slug: string;
-    color: string | null;
-  }[];
+  const [gameId, schools] = await Promise.all([getGameId(mode), getSchools()]);
   const schoolColorByName = new Map(schools.map((s) => [s.name, s.color]));
 
   // Résout le school_id à partir du slug si filtrage actif
@@ -213,7 +202,7 @@ async function RankingBody({
   let rows: Row[] = [];
   let villeRows: VilleRow[] = [];
 
-  if (game) {
+  if (gameId) {
     if (scope === "VILLES") {
       // ── Classement par ville (école) ─────────────────────────────────────
       // 1. Fetch all player ratings (GLOBAL + 1V1)
@@ -221,14 +210,14 @@ async function RankingBody({
         supabase
           .from("player_ratings")
           .select("profile_id, scope, rating")
-          .eq("game_id", game.id)
+          .eq("game_id", gameId)
           .in("scope", ["GLOBAL", "1V1"])
           .gte("played", 1)
           .returns<{ profile_id: string; scope: string; rating: number }[]>(),
         supabase
           .from("duo_ratings")
           .select("profile_lo, profile_hi, rating")
-          .eq("game_id", game.id)
+          .eq("game_id", gameId)
           .gte("played", 1)
           .returns<{ profile_lo: string; profile_hi: string; rating: number }[]>(),
       ]);
@@ -293,7 +282,7 @@ async function RankingBody({
       const q = supabase
         .from("duo_ratings")
         .select("profile_lo, profile_hi, rating, played, won, lost")
-        .eq("game_id", game.id)
+        .eq("game_id", gameId)
         .gte("played", min)
         .order("rating", { ascending: false })
         .limit(100)
@@ -363,7 +352,7 @@ async function RankingBody({
         let rq = supabase
           .from("player_ratings")
           .select("profile_id, rating, played, won, lost")
-          .eq("game_id", game.id)
+          .eq("game_id", gameId)
           .eq("scope", scope)
           .gte("played", min)
           .order("rating", { ascending: false })
