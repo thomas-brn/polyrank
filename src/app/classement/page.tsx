@@ -5,6 +5,7 @@ import { ComingSoon } from "@/components/page-header";
 import { EloOverlay } from "@/components/elo-overlay";
 import { PageHero } from "@/components/page-hero";
 import { SchoolPromoFilters } from "@/components/school-promo-filters";
+import { RevealList } from "@/components/reveal-list";
 import { getMode, MODES, type Mode } from "@/lib/mode";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -391,7 +392,7 @@ async function RankingBody({
     return villeRows.length === 0 ? (
       <ComingSoon>Aucune ville classée pour l&apos;instant.</ComingSoon>
     ) : (
-      <ol className="flex flex-col gap-2">
+      <RevealList step={50}>
         {villeRows.map((v, i) => (
           <li key={v.ville}>
             <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -423,7 +424,7 @@ async function RankingBody({
             </div>
           </li>
         ))}
-      </ol>
+      </RevealList>
     );
   }
 
@@ -435,7 +436,7 @@ async function RankingBody({
           {!showAll ? " (au moins 5 matchs requis)" : ""}.
         </ComingSoon>
       ) : (
-        <ol className="flex flex-col gap-2">
+        <RevealList step={50}>
           {rows.map((row) => (
             <li key={row.key}>
               <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
@@ -488,7 +489,7 @@ async function RankingBody({
               </div>
             </li>
           ))}
-        </ol>
+        </RevealList>
       )}
 
       <div className="text-center">
