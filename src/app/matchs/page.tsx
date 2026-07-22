@@ -31,25 +31,80 @@ export default async function MatchsPage({
     );
   }
 
-  const supabase = await createClient();
   const mode = await getMode();
   const sport = MODES[mode].sport;
 
   const { format: rawFormat, school: schoolSlug, annee } = await searchParams;
   const matchFormat = toValidMatchFormat(rawFormat, mode);
 
-  const [{ data: game }, { data: schoolsData }] = await Promise.all([
-    supabase.from("games").select("id").eq("slug", mode).single<{ id: string }>(),
-    supabase.from("schools").select("id, name, slug").order("name"),
-  ]);
+  // Clé de suspense : re-suspend (affiche le squelette) à chaque changement de
+  // format ou de filtre, sans bloquer l'affichage de l'en-tête / des onglets.
+  const bodyKey = `${matchFormat}-${schoolSlug ?? ""}-${annee ?? ""}`;
 
-  const schools = (schoolsData ?? []) as { id: string; name: string; slug: string }[];
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <PageHero
+          title={`Historique ${sport}`}
+          description={`Tous les matchs de ${sport} joués.`}
+        />
+        <MatchFormatTabs current={matchFormat} basePath="/matchs" mode={mode} />
+      </div>
+
+      <Suspense fallback={<FiltersSkeleton />}>
+        <FiltersBar />
+      </Suspense>
+
+      <Suspense key={bodyKey} fallback={<MatchesSkeleton />}>
+        <MatchesBody
+          mode={mode}
+          matchFormat={matchFormat}
+          schoolSlug={schoolSlug}
+          annee={annee}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+// ─── Barre de filtres (streamée) ───────────────────────────────────────────────
+
+async function FiltersBar() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("schools").select("id, name, slug").order("name");
+  const schools = (data ?? []) as { id: string; name: string; slug: string }[];
+  return <SchoolPromoFilters schools={schools} basePath="/matchs" />;
+}
+
+// ─── Liste des matchs (streamée) ───────────────────────────────────────────────
+
+async function MatchesBody({
+  mode,
+  matchFormat,
+  schoolSlug,
+  annee,
+}: {
+  mode: Mode;
+  matchFormat: MatchFormat;
+  schoolSlug?: string;
+  annee?: string;
+}) {
+  const supabase = await createClient();
+  const sport = MODES[mode].sport;
+
+  const { data: game } = await supabase
+    .from("games")
+    .select("id")
+    .eq("slug", mode)
+    .single<{ id: string }>();
   const gameId = game?.id ?? "";
 
   // Résout school_id pour filtrage
   let filterSchoolId: string | null = null;
   if (schoolSlug) {
-    filterSchoolId = schools.find((s) => s.slug === schoolSlug)?.id ?? null;
+    const { data: schoolsData } = await supabase.from("schools").select("id, slug");
+    filterSchoolId =
+      (schoolsData ?? []).find((s: { slug: string }) => s.slug === schoolSlug)?.id ?? null;
   }
 
   let matches: MatchData[] = [];
@@ -102,34 +157,43 @@ export default async function MatchsPage({
     }
   }
 
+  if (matches.length === 0) {
+    return (
+      <ComingSoon>
+        Aucun match {sport} pour l&apos;instant. Sois le premier à en saisir un !
+      </ComingSoon>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <PageHero
-          title={`Historique ${sport}`}
-          description={`Tous les matchs de ${sport} joués.`}
-        />
-        <Suspense fallback={null}>
-          <MatchFormatTabs current={matchFormat} basePath="/matchs" mode={mode} />
-        </Suspense>
-      </div>
+    <ul className="flex flex-col gap-3">
+      {matches.map((match) => {
+        const leftSide = match.match_participants.find((p) => p.is_creator)?.side ?? "A";
+        return <MatchCard key={match.id} match={match} mode={mode} leftSide={leftSide} from="matchs" />;
+      })}
+    </ul>
+  );
+}
 
-      <Suspense fallback={null}>
-        <SchoolPromoFilters schools={schools} basePath="/matchs" />
-      </Suspense>
+// ─── Squelettes de chargement ──────────────────────────────────────────────────
 
-      {matches.length === 0 ? (
-        <ComingSoon>
-          Aucun match {sport} pour l&apos;instant. Sois le premier à en saisir un !
-        </ComingSoon>
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {matches.map((match) => {
-            const leftSide = match.match_participants.find((p) => p.is_creator)?.side ?? "A";
-            return <MatchCard key={match.id} match={match} mode={mode} leftSide={leftSide} from="matchs" />;
-          })}
-        </ul>
-      )}
+function FiltersSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <div className="h-7 w-32 animate-pulse rounded-md bg-slate-100" />
+      <div className="h-7 w-28 animate-pulse rounded-md bg-slate-100" />
     </div>
+  );
+}
+
+function MatchesSkeleton() {
+  return (
+    <ul className="flex flex-col gap-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <li key={i}>
+          <div className="h-[76px] animate-pulse rounded-xl border border-slate-200 bg-white" />
+        </li>
+      ))}
+    </ul>
   );
 }

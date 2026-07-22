@@ -85,7 +85,6 @@ export default async function ClassementPage({
   const scope: Scope =
     tabs.find((t) => t.scope === scopeParam?.toUpperCase())?.scope ?? tabs[0].scope;
   const showAll = all === "1";
-  const min = showAll ? 1 : DEFAULT_MIN;
 
   if (!isSupabaseConfigured) {
     return (
@@ -96,6 +95,100 @@ export default async function ClassementPage({
     );
   }
 
+  const tabHref = (s: Scope) => {
+    const params = new URLSearchParams();
+    if (s !== tabs[0].scope) params.set("scope", s.toLowerCase());
+    if (showAll) params.set("all", "1");
+    if (schoolSlug && s !== "VILLES") params.set("school", schoolSlug);
+    if (annee && schoolSlug && s !== "VILLES") params.set("annee", annee);
+    const qs = params.toString();
+    return qs ? `/classement?${qs}` : "/classement";
+  };
+
+  // Clé de suspense : re-suspend (affiche le squelette) à chaque changement de
+  // périmètre ou de filtre, sans bloquer l'affichage de l'en-tête / des onglets.
+  const bodyKey = `${scope}-${schoolSlug ?? ""}-${annee ?? ""}-${showAll ? 1 : 0}`;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <PageHero
+          title={`Classement ${sport}`}
+          description="Différents classements, différents modes de jeu."
+          topRightAction={<EloOverlay mode={mode} variant="bubble" />}
+        >
+          <div className="mt-3 hidden md:block">
+            <EloOverlay mode={mode} />
+          </div>
+        </PageHero>
+
+        {/* Onglets de périmètre — style identique au profil */}
+        <div className="flex border-b border-slate-200">
+          {tabs.map((t) => {
+            const active = t.scope === scope;
+            return (
+              <Link
+                key={t.scope}
+                href={tabHref(t.scope)}
+                className={`relative flex flex-1 items-center justify-center py-2.5 text-sm font-semibold transition-colors ${
+                  active ? "text-brand-600" : "text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                {t.label}
+                {active && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Filtres école / promo (masqués sur l'onglet Villes) */}
+      {scope !== "VILLES" && (
+        <Suspense fallback={<FiltersSkeleton />}>
+          <FiltersBar />
+        </Suspense>
+      )}
+
+      <Suspense key={bodyKey} fallback={<RankingSkeleton />}>
+        <RankingBody
+          mode={mode}
+          scope={scope}
+          showAll={showAll}
+          schoolSlug={schoolSlug}
+          annee={annee}
+        />
+      </Suspense>
+    </div>
+  );
+}
+
+// ─── Barre de filtres (streamée) ───────────────────────────────────────────────
+
+async function FiltersBar() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("schools").select("id, name, slug").order("name");
+  const schools = (data ?? []) as { id: string; name: string; slug: string }[];
+  return <SchoolPromoFilters schools={schools} basePath="/classement" />;
+}
+
+// ─── Corps du classement (streamé) ─────────────────────────────────────────────
+
+async function RankingBody({
+  mode,
+  scope,
+  showAll,
+  schoolSlug,
+  annee,
+}: {
+  mode: Mode;
+  scope: Scope;
+  showAll: boolean;
+  schoolSlug?: string;
+  annee?: string;
+}) {
+  const min = showAll ? 1 : DEFAULT_MIN;
   const supabase = await createClient();
 
   const [{ data: game }, { data: schoolsData }] = await Promise.all([
@@ -116,16 +209,6 @@ export default async function ClassementPage({
   if (schoolSlug) {
     filterSchoolId = schools.find((s) => s.slug === schoolSlug)?.id ?? null;
   }
-
-  const tabHref = (s: Scope) => {
-    const params = new URLSearchParams();
-    if (s !== tabs[0].scope) params.set("scope", s.toLowerCase());
-    if (showAll) params.set("all", "1");
-    if (schoolSlug && s !== "VILLES") params.set("school", schoolSlug);
-    if (annee && schoolSlug && s !== "VILLES") params.set("annee", annee);
-    const qs = params.toString();
-    return qs ? `/classement?${qs}` : "/classement";
-  };
 
   let rows: Row[] = [];
   let villeRows: VilleRow[] = [];
@@ -311,165 +394,151 @@ export default async function ClassementPage({
     }
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-1">
-        <PageHero
-          title={`Classement ${sport}`}
-          description="Différents classements, différents modes de jeu."
-          topRightAction={<EloOverlay mode={mode} variant="bubble" />}
-        >
-          <div className="mt-3 hidden md:block">
-            <EloOverlay mode={mode} />
-          </div>
-        </PageHero>
-
-      {/* Onglets de périmètre — style identique au profil */}
-      <div className="flex border-b border-slate-200">
-        {tabs.map((t) => {
-          const active = t.scope === scope;
-          return (
-            <Link
-              key={t.scope}
-              href={tabHref(t.scope)}
-              className={`relative flex flex-1 items-center justify-center py-2.5 text-sm font-semibold transition-colors ${
-                active ? "text-brand-600" : "text-slate-400 hover:text-slate-600"
-              }`}
-            >
-              {t.label}
-              {active && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full bg-brand-600" />
-              )}
-            </Link>
-          );
-        })}
-      </div>
-      </div>
-
-      {/* Filtres école / promo (masqués sur l'onglet Villes) */}
-      {scope !== "VILLES" && (
-        <Suspense fallback={null}>
-          <SchoolPromoFilters schools={schools} basePath="/classement" />
-        </Suspense>
-      )}
-
-      {scope === "VILLES" ? (
-        /* ── Vue villes ───────────────────────────────────────────────── */
-        villeRows.length === 0 ? (
-          <ComingSoon>Aucune ville classée pour l&apos;instant.</ComingSoon>
-        ) : (
-          <ol className="flex flex-col gap-2">
-            {villeRows.map((v, i) => (
-              <li key={v.ville}>
-                <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-                  <span
-                    className={`w-7 shrink-0 text-center text-sm ${
-                      i < 3 ? "text-base" : "font-bold text-slate-400"
-                    }`}
+  if (scope === "VILLES") {
+    return villeRows.length === 0 ? (
+      <ComingSoon>Aucune ville classée pour l&apos;instant.</ComingSoon>
+    ) : (
+      <ol className="flex flex-col gap-2">
+        {villeRows.map((v, i) => (
+          <li key={v.ville}>
+            <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+              <span
+                className={`w-7 shrink-0 text-center text-sm ${
+                  i < 3 ? "text-base" : "font-bold text-slate-400"
+                }`}
+              >
+                {rankBadge(i + 1)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col gap-0 sm:flex-row sm:items-baseline sm:gap-2">
+                  <p
+                    className="text-sm font-semibold"
+                    style={{ color: v.color ?? "#1e293b" }}
                   >
-                    {rankBadge(i + 1)}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col gap-0 sm:flex-row sm:items-baseline sm:gap-2">
-                      <p
-                        className="text-sm font-semibold"
-                        style={{ color: v.color ?? "#1e293b" }}
-                      >
-                        {v.ville}
-                      </p>
-                      <p className="text-[11px] text-slate-400">
-                        Global ({Math.round(v.eloGlobal)})
-                        {v.elo1v1 > 0 ? ` • 1v1 (${Math.round(v.elo1v1)})` : ""}
-                        {v.elo2v2 > 0 ? ` • 2v2 (${Math.round(v.elo2v2)})` : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="shrink-0 pr-1.5 text-right text-base font-bold tabular-nums text-brand-700">
-                    {Math.round(v.eloPondere)}
-                  </span>
+                    {v.ville}
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Global ({Math.round(v.eloGlobal)})
+                    {v.elo1v1 > 0 ? ` • 1v1 (${Math.round(v.elo1v1)})` : ""}
+                    {v.elo2v2 > 0 ? ` • 2v2 (${Math.round(v.elo2v2)})` : ""}
+                  </p>
                 </div>
-              </li>
-            ))}
-          </ol>
-        )
+              </div>
+              <span className="shrink-0 pr-1.5 text-right text-base font-bold tabular-nums text-brand-700">
+                {Math.round(v.eloPondere)}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ol>
+    );
+  }
+
+  return (
+    <>
+      {rows.length === 0 ? (
+        <ComingSoon>
+          Aucun joueur classé pour l&apos;instant
+          {!showAll ? " (au moins 5 matchs requis)" : ""}.
+        </ComingSoon>
       ) : (
-        /* ── Vue joueurs / duos ───────────────────────────────────────── */
-        <>
-          {rows.length === 0 ? (
-            <ComingSoon>
-              Aucun joueur classé pour l&apos;instant
-              {!showAll ? " (au moins 5 matchs requis)" : ""}.
-            </ComingSoon>
-          ) : (
-            <ol className="flex flex-col gap-2">
-              {rows.map((row) => (
-                <li key={row.key}>
-                  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
-                    <span
-                      className={`w-7 shrink-0 text-center text-sm ${
-                        row.rank <= 3 ? "text-base" : "font-bold text-slate-400"
-                      }`}
-                    >
-                      {rankBadge(row.rank)}
-                    </span>
+        <ol className="flex flex-col gap-2">
+          {rows.map((row) => (
+            <li key={row.key}>
+              <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+                <span
+                  className={`w-7 shrink-0 text-center text-sm ${
+                    row.rank <= 3 ? "text-base" : "font-bold text-slate-400"
+                  }`}
+                >
+                  {rankBadge(row.rank)}
+                </span>
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-col gap-0 sm:flex-row sm:items-baseline sm:gap-2">
-                        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                          {row.players.map((p, idx) => (
-                            <span key={p.id ?? idx} className="flex items-center gap-1.5">
-                              {idx > 0 && <span className="text-slate-300">&</span>}
-                              {p.id ? (
-                                <Link
-                                  href={`/joueurs/${p.id}`}
-                                  className="text-sm font-semibold hover:underline"
-                                  style={{ color: p.color ?? "#1e293b" }}
-                                >
-                                  {p.name}
-                                </Link>
-                              ) : (
-                                <span
-                                  className="text-sm font-semibold"
-                                  style={{ color: p.color ?? "#1e293b" }}
-                                >
-                                  {p.name}
-                                </span>
-                              )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-col gap-0 sm:flex-row sm:items-baseline sm:gap-2">
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                      {row.players.map((p, idx) => (
+                        <span key={p.id ?? idx} className="flex items-center gap-1.5">
+                          {idx > 0 && <span className="text-slate-300">&</span>}
+                          {p.id ? (
+                            <Link
+                              href={`/joueurs/${p.id}`}
+                              className="text-sm font-semibold hover:underline"
+                              style={{ color: p.color ?? "#1e293b" }}
+                            >
+                              {p.name}
+                            </Link>
+                          ) : (
+                            <span
+                              className="text-sm font-semibold"
+                              style={{ color: p.color ?? "#1e293b" }}
+                            >
+                              {p.name}
                             </span>
-                          ))}
-                        </div>
-                        <p className="text-[11px] text-slate-400">
-                          {row.school ? `${row.school} • ` : ""}
-                          {row.won}/{row.lost}
-                          {row.played > 0
-                            ? ` • ${Math.round((row.won / row.played) * 100)}%`
-                            : ""}
-                        </p>
-                      </div>
+                          )}
+                        </span>
+                      ))}
                     </div>
-
-                    <span className="shrink-0 pr-1.5 text-right text-base font-bold tabular-nums text-brand-700">
-                      {Math.round(row.rating)}
-                    </span>
+                    <p className="text-[11px] text-slate-400">
+                      {row.school ? `${row.school} • ` : ""}
+                      {row.won}/{row.lost}
+                      {row.played > 0
+                        ? ` • ${Math.round((row.won / row.played) * 100)}%`
+                        : ""}
+                    </p>
                   </div>
-                </li>
-              ))}
-            </ol>
-          )}
+                </div>
 
-          <div className="text-center">
-            <Link
-              href={`/classement?scope=${scope.toLowerCase()}${showAll ? "" : "&all=1"}${schoolSlug ? `&school=${schoolSlug}` : ""}${annee ? `&annee=${annee}` : ""}`}
-              className="text-xs text-slate-400 underline hover:text-slate-600"
-            >
-              {showAll
-                ? "Masquer les joueurs avec moins de 5 matchs"
-                : "Afficher tout le monde (même < 5 matchs)"}
-            </Link>
-          </div>
-        </>
+                <span className="shrink-0 pr-1.5 text-right text-base font-bold tabular-nums text-brand-700">
+                  {Math.round(row.rating)}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ol>
       )}
+
+      <div className="text-center">
+        <Link
+          href={`/classement?scope=${scope.toLowerCase()}${showAll ? "" : "&all=1"}${schoolSlug ? `&school=${schoolSlug}` : ""}${annee ? `&annee=${annee}` : ""}`}
+          className="text-xs text-slate-400 underline hover:text-slate-600"
+        >
+          {showAll
+            ? "Masquer les joueurs avec moins de 5 matchs"
+            : "Afficher tout le monde (même < 5 matchs)"}
+        </Link>
+      </div>
+    </>
+  );
+}
+
+// ─── Squelettes de chargement ──────────────────────────────────────────────────
+
+function FiltersSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <div className="h-7 w-32 animate-pulse rounded-md bg-slate-100" />
+      <div className="h-7 w-28 animate-pulse rounded-md bg-slate-100" />
     </div>
+  );
+}
+
+function RankingSkeleton() {
+  return (
+    <ol className="flex flex-col gap-2">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <li key={i}>
+          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+            <div className="h-5 w-7 shrink-0 animate-pulse rounded bg-slate-100" />
+            <div className="min-w-0 flex-1">
+              <div className="h-3.5 w-28 animate-pulse rounded bg-slate-100" />
+              <div className="mt-1.5 h-2.5 w-20 animate-pulse rounded bg-slate-100" />
+            </div>
+            <div className="h-5 w-10 shrink-0 animate-pulse rounded bg-slate-100" />
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
