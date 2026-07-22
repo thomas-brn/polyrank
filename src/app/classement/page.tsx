@@ -335,51 +335,55 @@ async function RankingBody({
         };
       });
     } else {
-      // GLOBAL or 1V1
-      let profileIds: string[] | null = null;
+      // GLOBAL or 1V1 — profil (+ école) embarqué via jointure interne : une
+      // seule requête au lieu de profils-préfiltre + ratings + fetchProfiles.
+      let rq = supabase
+        .from("player_ratings")
+        .select(
+          "profile_id, rating, played, won, lost, profiles!inner(pseudo, annee, school_id, schools(name, slug, color))",
+        )
+        .eq("game_id", gameId)
+        .eq("scope", scope)
+        .gte("played", min);
+
       if (filterSchoolId || annee) {
-        let pq = supabase
-          .from("profiles")
-          .select("id")
-          .not("pseudo", "is", null);
-        if (filterSchoolId) pq = pq.eq("school_id", filterSchoolId);
-        if (annee) pq = pq.eq("annee", annee);
-        const { data: pdata } = await pq.returns<{ id: string }[]>();
-        profileIds = (pdata ?? []).map((p) => p.id);
+        rq = rq.not("profiles.pseudo", "is", null);
+        if (filterSchoolId) rq = rq.eq("profiles.school_id", filterSchoolId);
+        if (annee) rq = rq.eq("profiles.annee", annee);
       }
 
-      if (profileIds === null || profileIds.length > 0) {
-        let rq = supabase
-          .from("player_ratings")
-          .select("profile_id, rating, played, won, lost")
-          .eq("game_id", gameId)
-          .eq("scope", scope)
-          .gte("played", min)
-          .order("rating", { ascending: false })
-          .limit(100);
-
-        if (profileIds !== null) rq = rq.in("profile_id", profileIds);
-
-        const { data: ratings } = await rq.returns<
-          { profile_id: string; rating: number; played: number; won: number; lost: number }[]
+      const { data: ratings } = await rq
+        .order("rating", { ascending: false })
+        .limit(100)
+        .returns<
+          {
+            profile_id: string;
+            rating: number;
+            played: number;
+            won: number;
+            lost: number;
+            profiles: {
+              pseudo: string | null;
+              annee: string | null;
+              school_id: string | null;
+              schools: { name: string; slug: string; color: string | null } | null;
+            } | null;
+          }[]
         >();
-        const ids = (ratings ?? []).map((r) => r.profile_id);
-        const profMap = await fetchProfiles(supabase, ids);
 
-        rows = (ratings ?? []).map((r, i) => {
-          const p = profMap.get(r.profile_id);
-          return {
-            key: r.profile_id,
-            rank: i + 1,
-            rating: r.rating,
-            played: r.played,
-            won: r.won,
-            lost: r.lost,
-            players: [{ id: r.profile_id, name: p?.pseudo ?? "?", color: p?.school_color ?? null }],
-            school: p?.school_name ?? null,
-          };
-        });
-      }
+      rows = (ratings ?? []).map((r, i) => {
+        const p = r.profiles;
+        return {
+          key: r.profile_id,
+          rank: i + 1,
+          rating: r.rating,
+          played: r.played,
+          won: r.won,
+          lost: r.lost,
+          players: [{ id: r.profile_id, name: p?.pseudo ?? "?", color: p?.schools?.color ?? null }],
+          school: p?.schools?.name ?? null,
+        };
+      });
     }
   }
 

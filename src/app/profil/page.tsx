@@ -16,7 +16,7 @@ import { getMode, MODES, type Mode } from "@/lib/mode";
 import { getDateFrom } from "@/lib/period";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { getGameId } from "@/lib/supabase/queries";
+import { getGameId, getDuoPartnerPseudos, getUserDuoRatings } from "@/lib/supabase/queries";
 
 const MATCH_SELECT =
   "id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
@@ -355,29 +355,15 @@ async function EloSection({
   }
 
   // ── 2v2 ───────────────────────────────────────────────────────────────────
-  const { data: allDuos } = await supabase
-    .from("duo_ratings")
-    .select("profile_lo, profile_hi, rating")
-    .eq("game_id", gameId)
-    .or(`profile_lo.eq.${userId},profile_hi.eq.${userId}`)
-    .order("rating", { ascending: false })
-    .returns<{ profile_lo: string; profile_hi: string; rating: number }[]>();
+  // duo_ratings + pseudos partenaires sont mémoïsés : partagés avec
+  // DuoSelectSection (même onglet 2v2), donc fetchés une seule fois.
+  const allDuos = await getUserDuoRatings(gameId, userId);
+  if (allDuos.length === 0) return null;
 
-  if (!allDuos || allDuos.length === 0) return null;
-
-  const partnerIds = allDuos.map((d) => (d.profile_lo === userId ? d.profile_hi : d.profile_lo));
-  const uniquePartnerIds = [...new Set(partnerIds)];
-  const { data: partnerProfiles } = await supabase
-    .from("profiles")
-    .select("id, pseudo")
-    .in("id", uniquePartnerIds)
-    .returns<{ id: string; pseudo: string | null }[]>();
-  const pseudoMap = Object.fromEntries((partnerProfiles ?? []).map((p) => [p.id, p.pseudo ?? "?"]));
-
-  const duoPartners = allDuos.map((d) => {
-    const pid = d.profile_lo === userId ? d.profile_hi : d.profile_lo;
-    return { id: pid, pseudo: pseudoMap[pid] ?? "?", rating: d.rating };
-  });
+  const pseudoMap = await getDuoPartnerPseudos(gameId, userId);
+  const uniquePartnerIds = [
+    ...new Set(allDuos.map((d) => (d.profile_lo === userId ? d.profile_hi : d.profile_lo))),
+  ];
 
   const targetPartnerId = duoPartnerId && uniquePartnerIds.includes(duoPartnerId) ? duoPartnerId : null;
   const chosenDuo = targetPartnerId
@@ -409,29 +395,13 @@ async function DuoSelectSection({
   mode: Mode;
   selectedPartnerId?: string;
 }) {
-  const supabase = await createClient();
-
   const gameId = await getGameId(mode);
   if (!gameId) return null;
 
-  const { data: allDuos } = await supabase
-    .from("duo_ratings")
-    .select("profile_lo, profile_hi, rating")
-    .eq("game_id", gameId)
-    .or(`profile_lo.eq.${userId},profile_hi.eq.${userId}`)
-    .order("rating", { ascending: false })
-    .returns<{ profile_lo: string; profile_hi: string; rating: number }[]>();
+  const allDuos = await getUserDuoRatings(gameId, userId);
+  if (allDuos.length === 0) return null;
 
-  if (!allDuos || allDuos.length === 0) return null;
-
-  const partnerIds = allDuos.map((d) => (d.profile_lo === userId ? d.profile_hi : d.profile_lo));
-  const { data: profiles } = await supabase
-    .from("profiles")
-    .select("id, pseudo")
-    .in("id", partnerIds)
-    .returns<{ id: string; pseudo: string | null }[]>();
-  const pseudoMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.pseudo ?? "?"]));
-
+  const pseudoMap = await getDuoPartnerPseudos(gameId, userId);
   const partners = allDuos.map((d) => {
     const pid = d.profile_lo === userId ? d.profile_hi : d.profile_lo;
     return { id: pid, pseudo: pseudoMap[pid] ?? "?", rating: d.rating };
