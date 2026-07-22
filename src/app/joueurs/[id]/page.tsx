@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 
 import { PageHero } from "@/components/page-hero";
-import { type MatchData } from "@/components/match-card";
 import { MatchHistoryList } from "@/components/match-history-list";
 import { PeriodTabs, type Period } from "@/components/period-tabs";
 import { MoreStatsDisclosure } from "@/components/more-stats-disclosure";
@@ -15,9 +14,7 @@ import { getDateFrom } from "@/lib/period";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { getGameId, getDuoPartnerPseudos, getUserDuoRatings } from "@/lib/supabase/queries";
-
-const MATCH_SELECT =
-  "id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
+import { fetchUserMatchsPage, type UserMatchsFilters } from "@/lib/user-matchs";
 
 type ProfileRow = {
   id: string;
@@ -198,7 +195,7 @@ export default async function JoueurPage({
 
       {/* Historique des matchs */}
       <Suspense key={`history-${statsKey}`} fallback={<MatchHistorySpinner />}>
-        <MatchHistory userId={id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} />
+        <MatchHistory userId={id} period={period} mode={mode} matchFormat={matchFormat} duoPartnerId={duoPartnerId} />
       </Suspense>
     </div>
   );
@@ -423,45 +420,22 @@ async function MatchHistory({
   period,
   mode,
   matchFormat,
-  duoMatchIds,
+  duoPartnerId,
 }: {
   userId: string;
   period: Period;
   mode: Mode;
   matchFormat: MatchFormat;
-  duoMatchIds: string[] | null;
+  duoPartnerId?: string;
 }) {
-  const supabase = await createClient();
-  const dateFrom = getDateFrom(period);
   const sport = MODES[mode].sport;
+  const filters: UserMatchsFilters = { userId, mode, period, matchFormat, duoPartnerId };
 
-  const gameId = await getGameId(mode);
-
-  // matches reste la table principale (tri par ses propres colonnes) ; le
-  // filtre "au moins un participant = userId" passe par un embed !inner
-  // aliasé plutôt qu'un .in("id", ...) : évite une URL énorme pour les
-  // joueurs avec beaucoup de matchs (ex. import legacy), qui échouait
-  // silencieusement (et, tenté via foreignTable, ne triait pas les lignes).
-  let raw: MatchData[] = [];
-  if (gameId && (duoMatchIds === null || duoMatchIds.length > 0)) {
-    let mq = supabase
-      .from("matches")
-      .select(`${MATCH_SELECT}, me:match_participants!inner(profile_id)`)
-      .eq("game_id", gameId)
-      .eq("me.profile_id", userId)
-      .order("status", { ascending: true })
-      .order("played_at", { ascending: false })
-      .range(0, 20);
-    if (duoMatchIds !== null) mq = mq.in("id", duoMatchIds);
-    if (matchFormat === "1v1") mq = mq.eq("format", "1V1");
-    if (matchFormat === "2v2") mq = mq.eq("format", "2V2");
-    if (dateFrom) mq = mq.gte("played_at", dateFrom);
-    const { data } = await mq.returns<MatchData[]>();
-    raw = data ?? [];
-  }
-
+  // On demande 20 + 1 lignes : la ligne sonde indique s'il reste des matchs
+  // après la première page, sans être affichée.
+  const raw = await fetchUserMatchsPage(filters, 0, 20);
   const hasMore = raw.length > 20;
-  const initialMatches = hasMore ? raw.slice(0, 20) : raw;
+  const initialMatches = raw.slice(0, 20);
   const formatLabel = matchFormat === "1v1" ? "1v1" : matchFormat === "2v2" ? "2v2" : "";
 
   return (
@@ -470,11 +444,9 @@ async function MatchHistory({
         Matchs {formatLabel ? `${formatLabel} de ` : "de "}{sport}
       </p>
       <MatchHistoryList
-        key={mode}
+        key={`${mode}-${matchFormat}-${period}-${duoPartnerId ?? ""}`}
         initialMatches={initialMatches}
-        userId={userId}
-        mode={mode}
-        period={period}
+        filters={filters}
         sport={sport}
         hasMore={hasMore}
       />

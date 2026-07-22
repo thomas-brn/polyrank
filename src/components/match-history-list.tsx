@@ -2,21 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { MatchCard, type MatchData } from "@/components/match-card";
-import type { Mode } from "@/lib/mode";
 import { loadMoreMatches } from "@/app/profil/actions";
+import type { UserMatchsFilters } from "@/lib/user-matchs";
+
+const PAGE_SIZE = 20;
 
 export function MatchHistoryList({
   initialMatches,
-  userId,
-  mode,
-  period,
+  filters,
   sport,
   hasMore: initialHasMore,
 }: {
   initialMatches: MatchData[];
-  userId: string;
-  mode: Mode;
-  period: string;
+  filters: UserMatchsFilters;
   sport: string;
   hasMore: boolean;
 }) {
@@ -26,9 +24,9 @@ export function MatchHistoryList({
 
   function handleLoadMore() {
     startTransition(async () => {
-      const more = await loadMoreMatches(userId, mode, period, matches.length);
-      setMatches((prev) => [...prev, ...more]);
-      setHasMore(more.length > 10);
+      const more = await loadMoreMatches(filters, matches.length);
+      setMatches((prev) => [...prev, ...more.slice(0, PAGE_SIZE)]);
+      setHasMore(more.length > PAGE_SIZE);
     });
   }
 
@@ -45,9 +43,9 @@ export function MatchHistoryList({
       <ul className="flex flex-col gap-3">
         {matches.map((match) => {
           const leftSide =
-            match.match_participants.find((p) => p.profile_id === userId)?.side ?? "A";
+            match.match_participants.find((p) => p.profile_id === filters.userId)?.side ?? "A";
           return (
-            <MatchCard key={match.id} match={match} mode={mode} leftSide={leftSide} from="profil" />
+            <MatchCard key={match.id} match={match} mode={filters.mode} leftSide={leftSide} from="profil" />
           );
         })}
       </ul>

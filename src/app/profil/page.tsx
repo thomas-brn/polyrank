@@ -4,7 +4,6 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { PageHero } from "@/components/page-hero";
 import { ProfileSettingsMenu } from "@/components/profile-settings-menu";
-import { type MatchData } from "@/components/match-card";
 import { MatchHistoryList } from "@/components/match-history-list";
 import { PeriodTabs, type Period } from "@/components/period-tabs";
 import { MoreStatsDisclosure } from "@/components/more-stats-disclosure";
@@ -17,9 +16,7 @@ import { getDateFrom } from "@/lib/period";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { getGameId, getDuoPartnerPseudos, getUserDuoRatings } from "@/lib/supabase/queries";
-
-const MATCH_SELECT =
-  "id, format, status, is_friendly, winner_side, score_a, score_b, played_at, location, games(name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(pseudo))";
+import { fetchUserMatchsPage, type UserMatchsFilters } from "@/lib/user-matchs";
 
 type ProfileRow = { pseudo: string | null; annee: string | null; schools: { name: string } | null };
 type RatingRow = { scope: string; rating: number; played: number; won: number; lost: number };
@@ -290,7 +287,7 @@ export default async function ProfilPage({
 
       {/* Historique des matchs */}
       <Suspense key={`history-${statsKey}`} fallback={<MatchHistorySpinner />}>
-        <MatchHistory userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoMatchIds={duoMatchIds} />
+        <MatchHistory userId={user.id} period={period} mode={mode} matchFormat={matchFormat} duoPartnerId={duoPartnerId} />
       </Suspense>
     </div>
   );
@@ -508,46 +505,22 @@ async function MatchHistory({
   period,
   mode,
   matchFormat,
-  duoMatchIds,
+  duoPartnerId,
 }: {
   userId: string;
   period: Period;
   mode: Mode;
   matchFormat: MatchFormat;
-  duoMatchIds: string[] | null;
+  duoPartnerId?: string;
 }) {
-  const supabase = await createClient();
-  const dateFrom = getDateFrom(period);
   const sport = MODES[mode].sport;
+  const filters: UserMatchsFilters = { userId, mode, period, matchFormat, duoPartnerId };
 
-  const gameId = await getGameId(mode);
-
-  let historyIds: string[];
-  if (duoMatchIds !== null) {
-    historyIds = duoMatchIds;
-  } else {
-    historyIds = await getMatchIdsForProfile(supabase, userId);
-  }
-
-  let raw: MatchData[] = [];
-  if (historyIds.length > 0 && gameId) {
-    let mq = supabase
-      .from("matches")
-      .select(MATCH_SELECT)
-      .eq("game_id", gameId)
-      .in("id", historyIds)
-      .order("status", { ascending: true })
-      .order("played_at", { ascending: false })
-      .range(0, 20);
-    if (matchFormat === "1v1") mq = mq.eq("format", "1V1");
-    if (matchFormat === "2v2") mq = mq.eq("format", "2V2");
-    if (dateFrom) mq = mq.gte("played_at", dateFrom);
-    const { data } = await mq.returns<MatchData[]>();
-    raw = data ?? [];
-  }
-
+  // On demande 20 + 1 lignes : la ligne sonde indique s'il reste des matchs
+  // après la première page, sans être affichée.
+  const raw = await fetchUserMatchsPage(filters, 0, 20);
   const hasMore = raw.length > 20;
-  const initialMatches = hasMore ? raw.slice(0, 20) : raw;
+  const initialMatches = raw.slice(0, 20);
   const formatLabel = matchFormat === "1v1" ? "1v1" : matchFormat === "2v2" ? "2v2" : "";
 
   return (
@@ -556,11 +529,9 @@ async function MatchHistory({
         Mes matchs {formatLabel ? `${formatLabel} de ` : "de "}{sport}
       </p>
       <MatchHistoryList
-        key={mode}
+        key={`${mode}-${matchFormat}-${period}-${duoPartnerId ?? ""}`}
         initialMatches={initialMatches}
-        userId={userId}
-        mode={mode}
-        period={period}
+        filters={filters}
         sport={sport}
         hasMore={hasMore}
       />
