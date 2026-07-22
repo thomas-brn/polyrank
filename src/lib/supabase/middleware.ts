@@ -14,6 +14,19 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Next.js préfetche les <Link> (au survol / dans le viewport) : chaque
+  // préfetch traverse le proxy et déclencherait un getUser() = un aller-retour
+  // vers Supabase Auth. Comme un préfetch est spéculatif et ne doit pas
+  // rafraîchir la session, on le court-circuite ; la vraie navigation, elle,
+  // rafraîchira le token normalement.
+  const isPrefetch =
+    request.headers.get("next-router-prefetch") === "1" ||
+    request.headers.get("purpose") === "prefetch" ||
+    (request.headers.get("sec-purpose") ?? "").includes("prefetch");
+  if (isPrefetch) {
+    return supabaseResponse;
+  }
+
   const supabase = createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     cookies: {
       getAll() {
