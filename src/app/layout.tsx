@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { BottomNav, SideNav } from "@/components/site-nav";
+import { InAppBrowserBanner } from "@/components/in-app-browser-banner";
 import { getMode } from "@/lib/mode";
 import "./globals.css";
 import "katex/dist/katex.min.css";
@@ -50,6 +51,7 @@ export default async function RootLayout({
         className="flex min-h-full flex-col overflow-x-hidden font-sans"
         suppressHydrationWarning
       >
+        <InAppBrowserBanner />
         <SideNav />
         <main className="mx-auto w-full max-w-3xl flex-1 px-4 pt-4 pb-24 md:pb-12 md:pl-24 lg:pl-4">
           {children}
