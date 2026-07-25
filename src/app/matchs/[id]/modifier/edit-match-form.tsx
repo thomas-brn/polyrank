@@ -57,6 +57,7 @@ export function EditMatchForm({
   initialWinner,
   initialLocation,
   initialStats,
+  isFriendly,
 }: {
   matchId: string;
   games: Game[];
@@ -70,6 +71,7 @@ export function EditMatchForm({
   initialWinner: "A" | "B" | "NUL";
   initialLocation: string;
   initialStats: InitialStats;
+  isFriendly: boolean;
 }) {
   const router = useRouter();
   const [mates, setMates] = useState<Player[]>(initialMates);
@@ -88,7 +90,8 @@ export function EditMatchForm({
   const hasTaggedOpp = opps.some((o) => o.profileId);
   const namesFilled =
     mates.every((m) => m.name.trim()) && opps.every((o) => o.name.trim());
-  const canSubmit = Boolean(initialGameId) && hasTaggedOpp && namesFilled;
+  const canSubmit =
+    Boolean(initialGameId) && (isFriendly || hasTaggedOpp) && namesFilled;
 
   const usedIds = [
     myId,
@@ -180,7 +183,7 @@ export function EditMatchForm({
         </div>
       </div>
 
-      {!hasTaggedOpp ? (
+      {!isFriendly && !hasTaggedOpp ? (
         <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
           Pour enregistrer ce match, au moins un des adversaires doit avoir un compte, Tague-le avec <strong>@</strong>.
           </p>

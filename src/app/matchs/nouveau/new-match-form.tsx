@@ -52,7 +52,8 @@ export function NewMatchForm({
   const hasTaggedOpp = opps.some((o) => o.profileId);
   const namesFilled =
     mates.every((m) => m.name.trim()) && opps.every((o) => o.name.trim());
-  const canSubmit = Boolean(game?.id) && hasTaggedOpp && namesFilled;
+  const canSubmit =
+    Boolean(game?.id) && (isFriendly || hasTaggedOpp) && namesFilled;
 
   const usedIds = [
     myId,
@@ -143,7 +144,7 @@ export function NewMatchForm({
         </div>
       </div>
 
-      {!hasTaggedOpp ? (
+      {!isFriendly && !hasTaggedOpp ? (
         <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-800">
           Au moins un des adversaires doit avoir un compte.
         </p>

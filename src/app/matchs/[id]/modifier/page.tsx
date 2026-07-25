@@ -31,6 +31,7 @@ type MatchRow = {
   score_b: number | null;
   location: string | null;
   stats: { a: FifaSideStats; b: FifaSideStats } | null;
+  is_friendly: boolean;
   games: { id: string; name: string; has_score: boolean } | null;
   match_participants: Participant[];
 };
@@ -56,7 +57,7 @@ export default async function ModifierMatchPage({
   const { data: match } = await supabase
     .from("matches")
     .select(
-      "id, created_by, game_id, winner_side, score_a, score_b, location, stats, games(id, name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(id, pseudo))",
+      "id, created_by, game_id, winner_side, score_a, score_b, location, stats, is_friendly, games(id, name, has_score), match_participants(side, is_creator, guest_name, profile_id, profiles(id, pseudo))",
     )
     .eq("id", id)
     .single<MatchRow>();
@@ -108,6 +109,7 @@ export default async function ModifierMatchPage({
         initialWinner={match.winner_side}
         initialLocation={match.location ?? ""}
         initialStats={match.stats}
+        isFriendly={match.is_friendly}
       />
     </div>
   );

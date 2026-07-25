@@ -69,7 +69,8 @@ export async function createMatch(
   }
 
   // Au moins un adversaire doit avoir un compte (taggé) : lui seul pourra contester.
-  if (!opps.some((o) => o.profileId)) {
+  // Non requis pour les matchs amicaux, qui n'influent pas le classement.
+  if (!isFriendly && !opps.some((o) => o.profileId)) {
     return {
       error:
         "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir contester le match.",

@@ -50,9 +50,14 @@ export async function updateMatch(
 
   const { data: existing } = await supabase
     .from("matches")
-    .select("id, created_by, status")
+    .select("id, created_by, status, is_friendly")
     .eq("id", matchId)
-    .single<{ id: string; created_by: string; status: string }>();
+    .single<{
+      id: string;
+      created_by: string;
+      status: string;
+      is_friendly: boolean;
+    }>();
 
   if (!existing) return { error: "Match introuvable." };
   if (existing.created_by !== user.id)
@@ -82,7 +87,7 @@ export async function updateMatch(
   if (opps.some((o) => o.profileId === user.id))
     return { error: "Tu ne peux pas être ton propre adversaire." };
 
-  if (!opps.some((o) => o.profileId))
+  if (!existing.is_friendly && !opps.some((o) => o.profileId))
     return {
       error:
         "Au moins un adversaire doit avoir un compte (taggé avec @) pour pouvoir contester le match.",
