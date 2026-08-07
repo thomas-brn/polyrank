@@ -38,8 +38,10 @@ export default async function MatchsPage({
   const matchFormat = toValidMatchFormat(rawFormat, mode);
 
   // Clé de suspense : re-suspend (affiche le squelette) à chaque changement de
-  // format ou de filtre, sans bloquer l'affichage de l'en-tête / des onglets.
-  const bodyKey = `${matchFormat}-${schoolSlug ?? ""}-${annee ?? ""}`;
+  // jeu, de format ou de filtre, sans bloquer l'affichage de l'en-tête / des
+  // onglets. Le mode doit en faire partie : sans lui, la liste cliente garde
+  // son state (les matchs de l'ancien jeu) quand on change de sport.
+  const bodyKey = `${mode}-${matchFormat}-${schoolSlug ?? ""}-${annee ?? ""}`;
 
   return (
     <div className="flex flex-col gap-4">

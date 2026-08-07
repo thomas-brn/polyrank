@@ -35,16 +35,11 @@ export async function refuseContest(matchId: string, _formData: FormData) {
 
   if (!user) redirect("/login");
 
-  const { error } = await supabase.rpc("refuse_contest", {
-    p_match_id: matchId,
-  });
+  await supabase.rpc("refuse_contest", { p_match_id: matchId });
 
-  if (!error) {
-    // Match supprimé : recalcul des classements.
-    await supabase.rpc("recompute_ratings");
-  }
-
-  redirect("/matchs");
+  // Le match passe EN_APPEL : rien n'est modifié ni supprimé, donc l'Elo ne
+  // bouge pas. Seul l'arbitrage admin pourra le faire évoluer.
+  redirect(`/matchs/${matchId}`);
 }
 
 // --- Arbitrage admin (matchs EN_APPEL) ---

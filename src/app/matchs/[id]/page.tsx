@@ -351,12 +351,19 @@ export default async function MatchDetailPage({
 
   const fifaStats = isFifa ? match.stats : null;
 
-  // Données de la contestation active (ne concerne pas les demandes de suppression)
+  // Une correction est proposée tant que la contestation n'est pas tranchée :
+  // en CONTESTE (le créateur doit répondre) comme en EN_APPEL suite à un refus
+  // (l'admin doit trancher). Ne concerne pas les demandes de suppression, qui
+  // portent une clé `action`.
   const isContested =
-    match.status === "CONTESTE" &&
+    (match.status === "CONTESTE" || match.status === "EN_APPEL") &&
     !!match.proposed_changes &&
     !match.proposed_changes.action;
   const propChanges = isContested ? match.proposed_changes : null;
+  // Le créateur peut encore accepter / refuser (uniquement avant l'appel).
+  const canResolveContest = isContested && match.status === "CONTESTE";
+  // Contestation refusée par le créateur : en attente d'arbitrage admin.
+  const contestAppeal = isContested && match.status === "EN_APPEL";
 
   const FIFACHAMP_STAT_ROWS = [
     { key: "cartons_rouges" as const, label: "Cartons rouges", optional: false },
@@ -437,7 +444,7 @@ export default async function MatchDetailPage({
       </div>
 
       {/* Bannière contestation : visible pour le créateur quand CONTESTE */}
-      {isCreator && isContested ? (
+      {isCreator && canResolveContest ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="size-4 text-red-600 shrink-0" />
@@ -470,10 +477,55 @@ export default async function MatchDetailPage({
                 type="submit"
                 className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
               >
-                Refuser (supprime le match)
+                Refuser (arbitrage admin)
               </button>
             </form>
           </div>
+        </div>
+      ) : null}
+
+      {/* Bannière appel : le créateur a refusé la correction, un admin tranche */}
+      {contestAppeal ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex flex-col gap-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="size-4 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800">
+                Contestation refusée par {aLabel}
+              </p>
+              {propChanges?.winner_side ? (
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Résultat proposé par {bLabel} :{" "}
+                  <strong>{winnerName(propChanges.winner_side)} gagne</strong>
+                </p>
+              ) : null}
+              <p className="text-xs text-amber-700/80 mt-1">
+                {isAdmin
+                  ? "Tranche le litige ci-dessous."
+                  : "Un admin va trancher. Le résultat et l'Elo restent inchangés en attendant."}
+              </p>
+            </div>
+          </div>
+          {isAdmin ? (
+            <div className="flex gap-2">
+              <form action={boundApproveDeletion}>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                >
+                  Supprimer le match
+                </button>
+              </form>
+              <form action={boundRejectDeletion}>
+                <button
+                  type="submit"
+                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  Rejeter l&apos;appel, garder le match
+                </button>
+              </form>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

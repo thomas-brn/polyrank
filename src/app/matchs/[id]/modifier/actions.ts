@@ -270,5 +270,6 @@ export async function deleteMatch(matchId: string, _formData: FormData) {
   // Le match disparaît de l'historique : on recalcule les classements.
   await supabase.rpc("recompute_ratings");
 
-  redirect("/matchs");
+  // La page du match n'existe plus : retour à l'accueil.
+  redirect("/");
 }
