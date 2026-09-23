@@ -475,7 +475,7 @@ async function RankingBody({
                     </div>
                     <p className="text-[11px] text-slate-400">
                       {row.school ? `${row.school} • ` : ""}
-                      {row.won}/{row.lost}
+                      {row.won}/{row.played}
                       {row.played > 0
                         ? ` • ${Math.round((row.won / row.played) * 100)}%`
                         : ""}
