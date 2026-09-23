@@ -54,6 +54,26 @@ async function rankOf(
   return (count ?? 0) + 1;
 }
 
+// Record = meilleur Elo Global jamais atteint (max sur tout l'historique
+// rejoué par recompute_ratings, pas seulement la valeur courante).
+async function maxGlobalRatingOf(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  gameId: string,
+  profileId: string,
+  currentRating: number,
+): Promise<number> {
+  const { data } = await supabase
+    .from("rating_history")
+    .select("rating")
+    .eq("game_id", gameId)
+    .eq("profile_id", profileId)
+    .eq("scope", "GLOBAL")
+    .order("rating", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ rating: number }>();
+  return Math.max(data?.rating ?? currentRating, currentRating);
+}
+
 // PostgREST plafonne chaque requête à 1000 lignes par défaut : on pagine
 // explicitement pour récupérer tous les match_id d'un joueur, même au-delà.
 const MATCH_PARTICIPANTS_PAGE_SIZE = 1000;
@@ -324,10 +344,13 @@ async function EloSection({
       .returns<RatingRow[]>();
     const eloGlobal = prs?.[0] ?? null;
     if (!eloGlobal) return null;
-    const rank = await rankOf(supabase, gameId, "GLOBAL", eloGlobal.rating);
+    const [rank, record] = await Promise.all([
+      rankOf(supabase, gameId, "GLOBAL", eloGlobal.rating),
+      maxGlobalRatingOf(supabase, gameId, userId, eloGlobal.rating),
+    ]);
     return (
       <div className="mt-6">
-        <EloCard title={`Elo Global`} rating={eloGlobal.rating} rank={rank} />
+        <EloCard title={`Elo Global`} rating={eloGlobal.rating} record={record} rank={rank} />
       </div>
     );
   }
@@ -791,7 +814,19 @@ async function DetailedStats({
 
 // ─── Composants UI ────────────────────────────────────────────────────────────
 
-function EloCard({ title, sub, rating, rank }: { title: string; sub?: string; rating?: number; rank: number | null }) {
+function EloCard({
+  title,
+  sub,
+  rating,
+  record,
+  rank,
+}: {
+  title: string;
+  sub?: string;
+  rating?: number;
+  record?: number;
+  rank: number | null;
+}) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-slate-200 bg-white px-4 py-5 text-center">
       <p className="text-sm font-medium leading-tight text-slate-700">{title}</p>
@@ -799,6 +834,9 @@ function EloCard({ title, sub, rating, rank }: { title: string; sub?: string; ra
       <p className="mt-2 text-4xl font-bold tabular-nums text-brand-700">
         {rating != null ? Math.round(rating) : "—"}
       </p>
+      {record != null && (
+        <p className="mt-1 text-xs font-medium text-slate-400">Record : {Math.round(record)}</p>
+      )}
       <p className="mt-1 text-sm font-medium text-slate-400">
         {rank != null ? `#${rank}` : "—"}
       </p>
