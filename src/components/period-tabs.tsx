@@ -11,7 +11,16 @@ export const PERIODS = [
 
 export type Period = (typeof PERIODS)[number]["key"];
 
-export function PeriodTabs({ current, basePath }: { current: Period; basePath: string }) {
+export function PeriodTabs({
+  current,
+  basePath,
+  /** Paramètres d'URL supplémentaires à conserver en changeant de période. */
+  preserve = [],
+}: {
+  current: Period;
+  basePath: string;
+  preserve?: string[];
+}) {
   const searchParams = useSearchParams();
   const format = searchParams.get("format");
 
@@ -19,6 +28,10 @@ export function PeriodTabs({ current, basePath }: { current: Period; basePath: s
     const params = new URLSearchParams();
     if (key !== "all") params.set("period", key);
     if (format) params.set("format", format);
+    for (const name of preserve) {
+      const value = searchParams.get(name);
+      if (value) params.set(name, value);
+    }
     const qs = params.toString();
     return qs ? `${basePath}?${qs}` : basePath;
   }
