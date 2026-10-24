@@ -1,6 +1,6 @@
 import { KaTeXFormula } from "@/components/katex-formula";
 
-/** Facteur K du CoinCoin — peut diverger du FifaChamp à l'avenir */
+/** Facteur K, commun à tous les sports */
 const K = 40;
 
 function Var({ name, children }: { name: string; children: React.ReactNode }) {
@@ -40,7 +40,7 @@ function ExampleCard({
   );
 }
 
-export function CoinCoinElo() {
+export function EloExplainer() {
   return (
     <div className="flex flex-col gap-8">
 
@@ -57,7 +57,7 @@ export function CoinCoinElo() {
 
       {/* 4 classements */}
       <section className="flex flex-col gap-3">
-        <h3 className="font-semibold text-slate-800">Les 4 classements CoinCoin</h3>
+        <h3 className="font-semibold text-slate-800">Les 4 classements</h3>
         <p className="text-sm text-slate-600">
           Il existe 4 classements différents : le 1v1 et le 2v2 sont indépendants.
           L&apos;Elo global est alimenté par tous les matchs ; le classement Villes en est dérivé.
@@ -81,7 +81,7 @@ export function CoinCoinElo() {
             <p className="font-medium text-slate-800">Elo 2v2</p>
             <p className="mt-1 text-sm text-slate-500">
               Classement alimenté uniquement par les matchs strictement 2 contre 2. L&apos;entité notée est la <strong>paire</strong>, pas le joueur seul. Chaque duo
-              a son propre Elo totalement indépendant des Elos individuels. C&apos;est le classement vedette du CoinCoin.
+              a son propre Elo totalement indépendant des Elos individuels.
             </p>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -105,8 +105,8 @@ export function CoinCoinElo() {
           <h3 className="font-semibold text-slate-800">Comment est calculé l&apos;Elo en fin de match ?</h3>
           <p className="text-sm leading-relaxed text-slate-600">
             À chaque match validé, le système applique trois étapes pour déterminer combien de
-            points s&apos;échangent entre les deux camps. La formule est identique à chaque fois ;
-            seul le <strong>niveau N</strong> du camp change selon le classement visé.
+            points s&apos;échangent entre les deux camps. La formule est identique à chaque fois;
+            seul le <strong>niveau N </strong>du camp change selon le classement visé.
           </p>
         </div>
 
@@ -176,8 +176,7 @@ export function CoinCoinElo() {
             </div>
 
             <p className="text-slate-500">
-              Le delta de l&apos;Elo global s&apos;applique{" "}
-              <strong>en entier à chaque membre</strong> de l&apos;équipe en 2v2 (pas divisé par deux).
+              Le delta de l&apos;Elo global s&apos;applique <strong>en entier à chaque membre </strong>de l&apos;équipe en 2v2 (pas divisé par deux).
             </p>
           </div>
         </div>
@@ -228,7 +227,7 @@ export function CoinCoinElo() {
               les perd pour que le jeu soit à somme nulle.
             </Var>
             <Var name={`K = ${K}`}>
-              C&apos;est le <strong>facteur d&apos;échelle</strong> du match : il fixe l&apos;amplitude
+              C&apos;est le <strong>facteur d&apos;échelle </strong> du match : il fixe l&apos;amplitude
               des gains et des pertes. Plus le facteur K est élevé, plus les points échangés sont
               importants et rendent le classement plus sensible aux surprises.
             </Var>

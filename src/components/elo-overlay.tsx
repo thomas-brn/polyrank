@@ -3,16 +3,11 @@
 import { Info, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import type { Mode } from "@/lib/mode";
-
-import { CoinCoinElo } from "./elo/coincoin-elo";
-import { FifaChampElo } from "./elo/fifachamp-elo";
+import { EloExplainer } from "./elo/elo-explainer";
 
 export function EloOverlay({
-  mode,
   variant = "full",
 }: {
-  mode: Mode;
   variant?: "full" | "bubble";
 }) {
   const [open, setOpen] = useState(false);
@@ -86,7 +81,7 @@ export function EloOverlay({
 
             {/* Content */}
             <div className="flex-1 px-5 py-6">
-              {mode === "fifachamp" ? <FifaChampElo /> : <CoinCoinElo />}
+              <EloExplainer />
             </div>
           </div>
         </div>

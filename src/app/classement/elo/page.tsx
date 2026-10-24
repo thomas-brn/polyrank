@@ -1,7 +1,6 @@
 import Link from "next/link";
 
-import { CoinCoinElo } from "@/components/elo/coincoin-elo";
-import { FifaChampElo } from "@/components/elo/fifachamp-elo";
+import { EloExplainer } from "@/components/elo/elo-explainer";
 import { PageHero } from "@/components/page-hero";
 import { getMode, MODES } from "@/lib/mode";
 
@@ -24,7 +23,7 @@ export default async function EloPage() {
       </PageHero>
 
       <div className="pb-4">
-        {mode === "fifachamp" ? <FifaChampElo /> : <CoinCoinElo />}
+        <EloExplainer />
       </div>
     </div>
   );
