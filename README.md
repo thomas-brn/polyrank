@@ -2,14 +2,13 @@
 
 **Le classement Elo des jeux entre élèves ingénieurs.**
 
-PolyRank permet aux étudiants du réseau Polytech de saisir leurs résultats en
-fin de partie, depuis leur téléphone, et de suivre leur classement Elo par jeu,
+PolyRank permet aux étudiants du réseau d'écoles de saisir leurs résultats en
+fin de partie et de suivre leur classement Elo par jeu,
 par format et par école.
 
-Deux jeux au lancement : **FifaChamp** (score et statistiques détaillées) et
-**CoinCoin** (victoire ou défaite).
+Deux jeux au lancement : **FifaChamp** et **CoinCoin**.
 
-<!-- TODO captures mobiles : accueil, classement, saisie d'un match, profil -->
+<!-- TODO captures avec des données de test -->
 
 ## Fonctionnalités
 
@@ -53,7 +52,7 @@ back-office dédié.
 
 - Profil public : Elo et rang sur chaque classement, record personnel, courbes
   d'évolution, moyennes par match, partenaire et rivaux les plus fréquents,
-  historique des matchs, anciens pseudos. Filtrable par format et par période.
+  historique des matchs. Filtrable par format et par période.
 - **Comparaison** de deux joueurs : Elo en vis-à-vis, courbes superposées,
   radar de statistiques et bilan de leurs confrontations directes. Les deux
   joueurs sont dans l'URL, une comparaison se partage.
@@ -67,7 +66,7 @@ back-office dédié.
   profil** à l'inscription et retrouvent tous leurs matchs.
 - Pseudo modifiable une fois par mois, anciens pseudos conservés.
 - Avertissement quand l'app est ouverte dans le navigateur intégré d'Instagram
-  ou Messenger, où l'envoi du code OTP échoue.
+  ou Messenger, où l'envoi du code OTP peut échouer.
 
 ## Sous le capot
 
@@ -142,8 +141,7 @@ Conventions de branches et de commits : [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 ## Statut
 
-Projet personnel en cours de développement, utilisé par des élèves du réseau
-Polytech. Prochaine grande étape : les tournois (poules, arbres, BO3/BO5).
+Projet personnel en cours de développement, utilisé par des élèves du réseau. Prochaine grande étape : les tournois (poules, arbres, BO3/BO5).
 
 Le code est consultable mais n'est pas sous licence libre : tous droits
 réservés.
