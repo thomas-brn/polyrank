@@ -49,8 +49,9 @@ next-env.d.ts
 # DB migrations
 /supabase/
 
-# docs (privés pour le moment)
-/docs/
+# docs (privés pour le moment, sauf la spec Elo)
+/docs/*
+!/docs/ELO.md
 
 # claude and agents
 CLAUDE.md
